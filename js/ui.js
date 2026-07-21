@@ -3,6 +3,7 @@
 export const $ = (sel) => document.querySelector(sel);
 
 export function confetti(n = 60) {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const colors = ['#ff5f6d', '#38d0f2', '#ffd23f', '#7cf29b', '#c17ef5', '#ff9f43'];
   for (let i = 0; i < n; i++) {
     const c = document.createElement('div');

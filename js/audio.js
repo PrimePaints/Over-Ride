@@ -13,7 +13,8 @@ function ensureCtx() {
     if (!AC) return null;
     ctx = new AC();
   }
-  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+  // iOS also uses a non-standard 'interrupted' state after calls/Siri
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
   return ctx;
 }
 
@@ -77,14 +78,18 @@ export function startNoise() {
     bp.frequency.value = 1400;
     bp.Q.value = 0.35;
     head.connect(bp);
-    head = bp;
-    // slow amplitude wobble so it feels like weather, not a fan
+    // slow amplitude wobble so it feels like weather, not a fan —
+    // as a separate AM stage so it can't fight the fade/duck on noiseGain
+    const am = c.createGain();
+    am.gain.value = 1;
+    bp.connect(am);
+    head = am;
     rainLfo = c.createOscillator();
     rainLfo.frequency.value = 0.13;
-    const lfoGain = c.createGain();
-    lfoGain.gain.value = vol * 0.3;
-    rainLfo.connect(lfoGain);
-    lfoGain.connect(noiseGain.gain);
+    const lfoDepth = c.createGain();
+    lfoDepth.gain.value = 0.35; // 1 ± 0.35 — never negative
+    rainLfo.connect(lfoDepth);
+    lfoDepth.connect(am.gain);
     rainLfo.start();
   }
 

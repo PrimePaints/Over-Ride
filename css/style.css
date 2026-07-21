@@ -74,12 +74,13 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .triage-btn:active { transform: scale(.97); }
 .t-emoji { font-size: 1.9rem; line-height: 1; margin-bottom: 6px; }
 .t-label { font-size: 1.65rem; font-weight: 800; letter-spacing: .01em; }
-.t-sub { font-size: .9rem; opacity: .85; margin-top: 3px; font-weight: 500; }
+.t-sub { font-size: .9rem; opacity: .95; margin-top: 3px; font-weight: 500; }
 
-.t-forgot { background: linear-gradient(135deg, #2b50c0, var(--forgot)); }
-.t-spiral { background: linear-gradient(135deg, #a2233f, var(--spiral)); }
-.t-stuck  { background: linear-gradient(135deg, #c07607, var(--stuck)); }
-.t-dump   { background: linear-gradient(135deg, #14855b, var(--dump)); }
+/* gradient endpoints kept dark enough that white text holds ≥4.5:1 contrast */
+.t-forgot { background: linear-gradient(135deg, #23459c, #2f5ee0); }
+.t-spiral { background: linear-gradient(135deg, #8f1c36, #cc2b50); }
+.t-stuck  { background: linear-gradient(135deg, #7a4a03, #a86200); }
+.t-dump   { background: linear-gradient(135deg, #0d5c3e, #148055); }
 
 /* ============ SHARED CONTROLS ============ */
 .icon-btn {
@@ -196,6 +197,8 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .ground-text { font-size: 1.5rem; font-weight: 700; text-align: center; line-height: 1.4; padding: 0 10px; }
 .ground-subtext { color: var(--dim); text-align: center; font-size: .95rem; }
 .small-exit { position: absolute; bottom: calc(var(--safe-bottom) + 10px); left: 0; right: 0; width: auto; }
+.exit-row { display: flex; justify-content: space-evenly; gap: 8px; }
+.exit-row .ghost-btn { width: auto; }
 
 #screen-defib { position: relative; }
 
@@ -235,6 +238,7 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
   transition: transform .15s ease, border-color .15s ease;
 }
 .tube.selected { transform: translateY(-14px); border-color: var(--text); }
+.tube:focus-visible { outline: 3px solid var(--forgot); outline-offset: 3px; }
 .tube .seg { width: 100%; height: 25%; transition: height .18s ease; }
 
 /* ============ RETRACER ============ */
@@ -392,5 +396,6 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 /* ============ REDUCED MOTION ============ */
 @media (prefers-reduced-motion: reduce) {
   .pulse-ring, .pulse-core, .mic-btn.listening, .big-mic.listening { animation: none; }
+  .confetti { display: none; }
   * { transition-duration: .01ms !important; }
 }

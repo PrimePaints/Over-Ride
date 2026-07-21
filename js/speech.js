@@ -23,21 +23,39 @@ if ('speechSynthesis' in window) {
   speechSynthesis.onvoiceschanged = pickVoice;
 }
 
+// iOS unlocks speechSynthesis only from a user gesture — speak a silent
+// utterance on the first tap so later, gesture-less lines actually play.
+let ttsPrimed = false;
+export function primeTTS() {
+  if (ttsPrimed || !('speechSynthesis' in window)) return;
+  ttsPrimed = true;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0;
+    speechSynthesis.speak(u);
+  } catch { /* ignore */ }
+}
+
+let sayTimer = null;
+
 export function say(text, { force = false } = {}) {
   if (!('speechSynthesis' in window)) return;
   if (!force && !settings.get('voice')) return;
   try {
     speechSynthesis.cancel();
+    clearTimeout(sayTimer);
     const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ' '));
     if (voice) u.voice = voice;
     u.rate = 0.95;
     u.pitch = 1.0;
     u.volume = 0.9;
-    speechSynthesis.speak(u);
+    // Chrome Android drops utterances queued in the same tick as cancel()
+    sayTimer = setTimeout(() => { try { speechSynthesis.speak(u); } catch { /* ignore */ } }, 60);
   } catch { /* ignore */ }
 }
 
 export function hush() {
+  clearTimeout(sayTimer);
   if ('speechSynthesis' in window) { try { speechSynthesis.cancel(); } catch { /* ignore */ } }
 }
 
@@ -45,16 +63,27 @@ export function hush() {
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 export const sttSupported = !!SR;
 
+// The one active recognition, with a finish() that fires the owner's onEnd
+// exactly once — whether the browser ends it, the owner stops it, or a new
+// listen() preempts it. Callers can therefore always trust onEnd to clean up.
 let activeRec = null;
 
 // Start listening. Returns a controller {stop()} or null if unsupported.
-// onText(finalText) fires per finalized utterance; onEnd() when recognition stops.
+// onText(finalText) fires per finalized utterance; onEnd() always fires once.
 export function listen({ onText, onEnd, continuous = false } = {}) {
   if (!SR) { onEnd && onEnd('unsupported'); return null; }
-  stopListening();
+  stopListening(); // preempt: the previous owner's onEnd fires now
 
   const rec = new SR();
-  activeRec = rec;
+  let ended = false;
+  const finish = (err) => {
+    if (ended) return;
+    ended = true;
+    if (activeRec && activeRec.rec === rec) activeRec = null;
+    onEnd && onEnd(err);
+  };
+  activeRec = { rec, finish };
+
   rec.lang = navigator.language || 'en-US';
   rec.continuous = continuous;
   rec.interimResults = false;
@@ -68,17 +97,22 @@ export function listen({ onText, onEnd, continuous = false } = {}) {
       }
     }
   };
-  rec.onerror = (e) => { if (activeRec === rec) activeRec = null; onEnd && onEnd(e.error); };
-  rec.onend = () => { if (activeRec === rec) { activeRec = null; onEnd && onEnd(); } };
+  rec.onerror = (e) => finish(e.error);
+  rec.onend = () => finish();
 
-  try { rec.start(); } catch { activeRec = null; onEnd && onEnd('failed'); return null; }
-  return { stop: () => { try { rec.stop(); } catch { /* ignore */ } } };
+  try { rec.start(); } catch { finish('failed'); return null; }
+  return {
+    stop: () => {
+      finish(); // owner cleanup runs immediately, not at the browser's leisure
+      try { rec.stop(); } catch { /* ignore */ }
+    },
+  };
 }
 
 export function stopListening() {
-  if (activeRec) {
-    const r = activeRec;
-    activeRec = null;
-    try { r.onend = null; r.onerror = null; r.stop(); } catch { /* ignore */ }
-  }
+  if (!activeRec) return;
+  const { rec, finish } = activeRec;
+  activeRec = null;
+  finish('preempted');
+  try { rec.stop(); } catch { /* ignore */ }
 }

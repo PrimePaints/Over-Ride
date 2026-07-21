@@ -3,8 +3,9 @@
 
 import { $ } from './ui.js';
 import { settings, vault, wipeAll } from './store.js';
-import { unlockAudio, stopNoise } from './audio.js';
-import { buzz, stopHeartbeat } from './haptics.js';
+import { unlockAudio } from './audio.js';
+import { buzz } from './haptics.js';
+import { primeTTS } from './speech.js';
 import * as defib from './defib.js';
 import * as retrace from './retrace.js';
 import * as stepper from './stepper.js';
@@ -15,23 +16,47 @@ import { renderCard } from './dump.js';
 const flows = { defib, retrace, stepper, dump };
 let current = 'home';
 
+function show(name) {
+  if (flows[current] && flows[current].exit) flows[current].exit();
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = $('#screen-' + name);
+  (el || $('#screen-home')).classList.add('active');
+  current = el ? name : 'home';
+  if (current === 'vault') renderVault();
+  if (flows[current] && flows[current].enter) flows[current].enter();
+  window.scrollTo(0, 0);
+}
+
+// History integration: the stack is always [home, currentScreen] so the
+// hardware/browser Back button returns home instead of closing the app.
 const router = {
   go(name) {
-    if (flows[current] && flows[current].exit) flows[current].exit();
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    const el = $('#screen-' + name);
-    (el || $('#screen-home')).classList.add('active');
-    current = el ? name : 'home';
-    if (name === 'vault') renderVault();
-    if (flows[current] && flows[current].enter) flows[current].enter();
-    window.scrollTo(0, 0);
+    if (name === 'home') {
+      if (current !== 'home' && history.state && history.state.screen) {
+        history.back(); // popstate handler shows home
+        return;
+      }
+      show('home');
+      return;
+    }
+    const entry = { screen: name };
+    if (current === 'home') history.pushState(entry, '');
+    else history.replaceState(entry, '');
+    show(name);
   },
 };
+
+window.addEventListener('popstate', (e) => {
+  show((e.state && e.state.screen) || 'home');
+});
+// A reload mid-flow would leave a stale history entry — normalize to home.
+if (history.state && history.state.screen) history.replaceState(null, '');
 
 // data-go buttons (triage + back buttons)
 document.querySelectorAll('[data-go]').forEach(btn => {
   btn.addEventListener('click', () => {
-    unlockAudio(); // user gesture — the only reliable moment to arm audio
+    unlockAudio(); // user gesture — the only reliable moment to arm audio…
+    primeTTS();    // …and to unlock speech synthesis on iOS
     buzz(15);
     router.go(btn.dataset.go);
   });
@@ -39,6 +64,13 @@ document.querySelectorAll('[data-go]').forEach(btn => {
 
 $('#btn-vault').addEventListener('click', () => router.go('vault'));
 $('#btn-settings').addEventListener('click', () => router.go('settings'));
+
+// When the on-screen keyboard opens, make sure the focused field is visible.
+document.addEventListener('focusin', (e) => {
+  if (e.target.matches('input, textarea')) {
+    setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250);
+  }
+});
 
 // ---------- vault ----------
 function renderVault() {
@@ -78,11 +110,21 @@ function bindSettings() {
   noise.addEventListener('change', () => settings.set('noise', noise.value));
   volume.addEventListener('change', () => settings.set('volume', parseInt(volume.value, 10)));
 
-  $('#set-wipe').addEventListener('click', () => {
-    if (confirm('Wipe everything Over-Ride remembers on this device?')) {
+  // two-tap confirm — native confirm() dialogs are jarring and unstylable
+  const wipe = $('#set-wipe');
+  let armed = null;
+  wipe.addEventListener('click', () => {
+    if (armed) {
+      clearTimeout(armed);
       wipeAll();
       location.reload();
+      return;
     }
+    wipe.textContent = 'Tap again to really wipe everything';
+    armed = setTimeout(() => {
+      armed = null;
+      wipe.textContent = 'Wipe all my data';
+    }, 4000);
   });
 }
 bindSettings();
@@ -91,12 +133,12 @@ bindSettings();
 Object.values(flows).forEach(f => f.init && f.init(router));
 
 // ---------- lifecycle safety ----------
-// If the tab is hidden mid-intervention, don't leave noise/vibration running.
+// If the tab is hidden mid-intervention, don't leave noise/vibration running;
+// when it comes back, pick the intervention up where it left off.
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && current === 'defib') {
-    stopNoise(0.5);
-    stopHeartbeat();
-  }
+  if (current !== 'defib') return;
+  if (document.hidden) defib.onHidden();
+  else defib.onVisible();
 });
 
 // ---------- PWA ----------

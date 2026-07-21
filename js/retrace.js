@@ -2,13 +2,15 @@
 // questions walk your attention backwards until the thought resurfaces.
 
 import { $, wireMic } from './ui.js';
-import { say, hush } from './speech.js';
+import { say, hush, stopListening } from './speech.js';
 import { chime } from './audio.js';
 import { RETRACE_SCRIPT } from './brain.js';
 import { crumbs, vault, ago } from './store.js';
 
 let router = null;
 let step = 0;
+let introTimer = null;
+let saveMode = false; // free-input row is repurposed to capture a vault entry
 
 function ask() {
   const item = RETRACE_SCRIPT[step];
@@ -31,7 +33,7 @@ function ask() {
     });
   } else {
     $('#retrace-input').value = '';
-    setTimeout(() => $('#retrace-input').focus(), 100);
+    $('#retrace-input').focus(); // synchronous — keeps the tap's user activation
   }
 }
 
@@ -60,9 +62,12 @@ function gotIt() {
   save.className = 'chip';
   save.textContent = '💾 Save it to my vault first';
   save.addEventListener('click', () => {
-    const what = prompt('What was it? (so the vault remembers even if you don\'t)');
-    if (what) vault.add({ type: 'todo', title: what, extra: 'recovered by the Retracer' });
-    router.go('home');
+    saveMode = true;
+    grid.innerHTML = '';
+    $('#retrace-q').textContent = 'What was it? I\'ll keep it safe.';
+    $('#retrace-free').classList.remove('hidden');
+    $('#retrace-input').value = '';
+    $('#retrace-input').focus();
   });
   grid.append(done, save);
 }
@@ -122,6 +127,12 @@ export function init(r) {
   wireMic($('#retrace-mic'), (text) => { $('#retrace-input').value = text; });
   const submitFree = () => {
     const v = $('#retrace-input').value.trim();
+    if (saveMode) {
+      if (v) vault.add({ type: 'todo', title: v, extra: 'recovered by the Retracer' });
+      saveMode = false;
+      router.go('home');
+      return;
+    }
     answer(v || '(skipped)', RETRACE_SCRIPT[step]);
   };
   $('#retrace-input-ok').addEventListener('click', submitFree);
@@ -130,14 +141,19 @@ export function init(r) {
 
 export function enter() {
   step = 0;
+  saveMode = false;
   $('#clues-panel').open = false;
+  $('#retrace-free').classList.add('hidden');
   renderClues();
   crumbs.log('hit “I Forgot”');
   $('#retrace-q').textContent = 'Don\'t panic. It\'s in there. Let\'s retrace.';
   say('Don\'t panic. It\'s in there. Let\'s retrace.');
-  setTimeout(() => { if (step === 0) ask(); }, 1600);
+  clearTimeout(introTimer);
+  introTimer = setTimeout(() => ask(), 1600);
 }
 
 export function exit() {
+  clearTimeout(introTimer);
+  stopListening();
   hush();
 }

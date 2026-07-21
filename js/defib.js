@@ -5,7 +5,7 @@
 import { $, confetti, wireMic } from './ui.js';
 import { startNoise, stopNoise, duckNoise, chime, pourSound, winSound, unlockAudio } from './audio.js';
 import { startHeartbeat, stopHeartbeat, buzz } from './haptics.js';
-import { say, hush } from './speech.js';
+import { say, hush, stopListening } from './speech.js';
 import { GROUND_LINES, HANDOFF_LINES, pick } from './brain.js';
 import { crumbs } from './store.js';
 import { WaterSort } from './game.js';
@@ -16,12 +16,15 @@ const GAME_SECONDS = 60;
 let game = null;
 let groundTimer = null;
 let gameTimer = null;
+let handoffSayTimer = null;
 let ringRaf = null;
 let router = null;
+let phase = 'ground';
 
-function show(phase) {
-  ['defib-ground', 'defib-game', 'defib-handoff'].forEach(id => {
-    $('#' + id).classList.toggle('hidden', id !== phase);
+function show(id) {
+  phase = id.replace('defib-', '');
+  ['defib-ground', 'defib-game', 'defib-handoff'].forEach(x => {
+    $('#' + x).classList.toggle('hidden', x !== id);
   });
 }
 
@@ -61,7 +64,8 @@ function handoff() {
   const line = pick(HANDOFF_LINES);
   $('#handoff-line').innerHTML = line.replace('. ', '.<br>');
   chime();
-  setTimeout(() => say(line), 600);
+  clearTimeout(handoffSayTimer);
+  handoffSayTimer = setTimeout(() => say(line), 600);
   crumbs.log('came out of a spiral (defibrillator run)');
 }
 
@@ -73,6 +77,7 @@ export function init(r) {
   router = r;
 
   $('#defib-skip').addEventListener('click', () => startGamePhase());
+  $('#defib-exit').addEventListener('click', () => finish('home'));
   $('#game-exit').addEventListener('click', () => finish('home'));
 
   wireMic($('#handoff-mic'), (text) => {
@@ -84,9 +89,8 @@ export function init(r) {
     const text = $('#handoff-input').value.trim();
     if (text) {
       crumbs.log(`after the spiral, you said you were trying to: “${text}”`);
-      say(`Good. ${text}. I'll remember that. Want me to break it into tiny steps?`);
       sessionStorage.setItem('override-task', text);
-      finish('stepper');
+      finish('stepper'); // the stepper's own intro line confirms the task out loud
     } else {
       finish('home');
     }
@@ -113,11 +117,25 @@ export function enter() {
   groundTimer = setTimeout(() => startGamePhase(), GROUND_SECONDS * 1000); // …then the puzzle hijacks working memory
 }
 
+// Called by main.js when the tab is hidden/shown mid-intervention.
+export function onHidden() {
+  stopNoise(0.5);
+  stopHeartbeat();
+}
+export function onVisible() {
+  if (phase === 'handoff') return;
+  startNoise();
+  startHeartbeat();
+}
+
 export function exit() {
   clearTimeout(groundTimer);
   clearTimeout(gameTimer);
+  clearTimeout(handoffSayTimer);
   cancelAnimationFrame(ringRaf);
+  if (game) game.stop();
   stopHeartbeat();
   stopNoise(2);
+  stopListening();
   hush();
 }

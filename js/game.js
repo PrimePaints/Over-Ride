@@ -13,13 +13,19 @@ export class WaterSort {
     this.selected = -1;
     this.solves = 0;
     this.locked = false;
-    this.el.addEventListener('click', (e) => {
+    this.winTimer = null;
+    const onTap = (e) => {
       const t = e.target.closest('.tube');
       if (t) this.tap(parseInt(t.dataset.i, 10));
+    };
+    this.el.addEventListener('click', onTap);
+    this.el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTap(e); }
     });
   }
 
   newPuzzle() {
+    clearTimeout(this.winTimer);
     const colors = Math.min(4 + Math.floor(this.solves / 2), 5);
     this.tubes = generate(colors);
     this.selected = -1;
@@ -27,35 +33,44 @@ export class WaterSort {
     this.render();
   }
 
+  // Cancel pending work (the win celebration's queued newPuzzle) on exit.
+  stop() {
+    clearTimeout(this.winTimer);
+    this.winTimer = null;
+  }
+
   tap(i) {
     if (this.locked) return;
     if (this.selected === -1) {
       if (this.tubes[i].length > 0) {
         this.selected = i;
-        this.render();
+        this.updateSelection();
       }
       return;
     }
     if (this.selected === i) {
       this.selected = -1;
-      this.render();
+      this.updateSelection();
       return;
     }
     if (canPour(this.tubes, this.selected, i)) {
-      pour(this.tubes, this.selected, i);
+      const from = this.selected;
+      pour(this.tubes, from, i);
       this.selected = -1;
       this.onPour();
-      this.render();
+      this.updateTube(from);
+      this.updateTube(i);
+      this.updateSelection();
       if (isSolved(this.tubes)) {
         this.locked = true;
         this.solves++;
         this.onWin();
-        setTimeout(() => this.newPuzzle(), 1400);
+        this.winTimer = setTimeout(() => this.newPuzzle(), 1400);
       }
     } else {
       // illegal pour: re-select the tapped tube instead of punishing
       this.selected = this.tubes[i].length > 0 ? i : -1;
-      this.render();
+      this.updateSelection();
     }
   }
 
@@ -66,15 +81,31 @@ export class WaterSort {
       t.className = 'tube' + (i === this.selected ? ' selected' : '');
       t.dataset.i = i;
       t.setAttribute('role', 'button');
-      t.setAttribute('aria-label', `Tube ${i + 1}, ${tube.length} of ${CAP} full`);
-      tube.forEach(c => {
-        const seg = document.createElement('div');
-        seg.className = 'seg';
-        seg.style.background = PALETTE[c];
-        t.appendChild(seg);
-      });
+      t.setAttribute('tabindex', '0');
+      this.fillTube(t, tube, i);
       this.el.appendChild(t);
     });
+  }
+
+  fillTube(t, tube, i) {
+    t.innerHTML = '';
+    t.setAttribute('aria-label', `Tube ${i + 1}, ${tube.length} of ${CAP} full`);
+    tube.forEach(c => {
+      const seg = document.createElement('div');
+      seg.className = 'seg';
+      seg.style.background = PALETTE[c];
+      t.appendChild(seg);
+    });
+  }
+
+  // In-place updates keep the same DOM nodes so the CSS lift transition runs.
+  updateSelection() {
+    [...this.el.children].forEach((t, i) => t.classList.toggle('selected', i === this.selected));
+  }
+
+  updateTube(i) {
+    const t = this.el.children[i];
+    if (t) this.fillTube(t, this.tubes[i], i);
   }
 }
 

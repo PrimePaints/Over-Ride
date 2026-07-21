@@ -10,6 +10,7 @@ import { crumbs, vault } from './store.js';
 
 let router = null;
 let micCtl = null;
+let autoMicTimer = null;
 
 function show(id) {
   ['dump-capture', 'dump-result'].forEach(x =>
@@ -68,10 +69,17 @@ export function renderCard(item, { interactive = false } = {}) {
   }
   card.append(icon, body);
   if (interactive && item.id) {
-    card.addEventListener('click', () => {
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-label', `${meta.label}: ${item.title}. Tap to toggle done.`);
+    const toggle = () => {
       vault.toggle(item.id);
       card.classList.toggle('done');
       buzz(15);
+    };
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
     });
   }
   return card;
@@ -113,13 +121,26 @@ export function init(r) {
 export function enter() {
   $('#dump-text').value = '';
   show('dump-capture');
+  setMicState(false);
   crumbs.log('hit “Brain Dump”');
-  // zero-friction: if mic is available, start listening immediately
-  if (sttSupported) setTimeout(toggleMic, 350);
+  // zero-friction: auto-listen — but ONLY if the mic permission is already
+  // granted. Never fire a native permission dialog at someone mid-crisis.
+  clearTimeout(autoMicTimer);
+  if (sttSupported && navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'microphone' }).then(p => {
+      if (p.state === 'granted' && document.querySelector('#screen-dump.active')) {
+        clearTimeout(autoMicTimer);
+        autoMicTimer = setTimeout(toggleMic, 200);
+      }
+    }).catch(() => { /* permission API quirks — wait for an explicit tap */ });
+  }
 }
 
 export function exit() {
-  if (micCtl) micCtl.stop();
+  clearTimeout(autoMicTimer);
+  if (micCtl) micCtl.stop(); // fires onEnd synchronously → resets micCtl + UI
+  micCtl = null;
+  setMicState(false);
   stopListening();
   hush();
 }

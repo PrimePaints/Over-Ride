@@ -2,9 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0b0b10">
 <meta name="description" content="Over-Ride — an intervention-first cognitive assistance app. For when you're at 10%, not 100%.">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Over-Ride">
@@ -57,9 +58,12 @@
   <!-- Phase 1: sensory override / grounding -->
   <div class="defib-phase" id="defib-ground">
     <div class="pulse-ring" id="pulse-ring"><div class="pulse-core"></div></div>
-    <p class="ground-text" id="ground-text">Nothing is required of you right now.</p>
+    <p class="ground-text" id="ground-text" role="status">Nothing is required of you right now.</p>
     <p class="ground-subtext">Brown noise on. Feel the pulse. Just be here.</p>
-    <button class="ghost-btn small-exit" id="defib-skip">skip →</button>
+    <div class="small-exit exit-row">
+      <button class="ghost-btn" id="defib-exit">✕ I'm okay, exit</button>
+      <button class="ghost-btn" id="defib-skip">skip →</button>
+    </div>
   </div>
 
   <!-- Phase 2: spatial puzzle -->
@@ -78,7 +82,7 @@
   <!-- Phase 3: AI hand-off -->
   <div class="defib-phase hidden" id="defib-handoff">
     <div class="copilot-avatar">◉</div>
-    <p class="copilot-line" id="handoff-line">Okay. The spiral is broken.<br>What were we trying to do right before this?</p>
+    <p class="copilot-line" id="handoff-line" role="status">Okay. The spiral is broken.<br>What were we trying to do right before this?</p>
     <div class="handoff-input-row">
       <input type="text" id="handoff-input" class="big-input" placeholder="type it, or use the mic…" autocomplete="off">
       <button class="mic-btn" id="handoff-mic" aria-label="Speak your answer">🎤</button>
@@ -102,7 +106,7 @@
   </header>
 
   <div id="retrace-flow">
-    <p class="copilot-line" id="retrace-q">Don't panic. It's in there. Let's retrace.</p>
+    <p class="copilot-line" id="retrace-q" role="status">Don't panic. It's in there. Let's retrace.</p>
     <div class="chip-grid" id="retrace-answers"></div>
     <div class="retrace-free hidden" id="retrace-free">
       <input type="text" id="retrace-input" class="big-input" placeholder="say or type it…" autocomplete="off">
@@ -140,8 +144,8 @@
   <div id="stepper-run" class="hidden">
     <div class="momentum-bar"><div class="momentum-fill" id="momentum-fill"></div></div>
     <p class="step-count" id="step-count">step 1</p>
-    <p class="the-step" id="the-step">Stand up.</p>
-    <p class="step-lock" id="step-lock">🔒 step 2 is locked until you do this one</p>
+    <p class="the-step" id="the-step" role="status">Stand up.</p>
+    <p class="step-lock" id="step-lock" aria-live="polite">🔒 step 2 is locked until you do this one</p>
     <button class="done-btn" id="step-done">DONE ✓</button>
     <button class="ghost-btn" id="stepper-quit">stop here (that's allowed)</button>
   </div>
@@ -149,7 +153,7 @@
   <!-- celebration -->
   <div id="stepper-win" class="hidden">
     <p class="win-emoji">🏆</p>
-    <p class="copilot-line" id="win-line">You did the thing.</p>
+    <p class="copilot-line" id="win-line" role="status">You did the thing.</p>
     <button class="pill-btn" id="stepper-again">Break down another task</button>
     <button class="ghost-btn" data-go="home">Home</button>
   </div>

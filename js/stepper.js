@@ -4,7 +4,7 @@
 import { $, confetti, wireMic } from './ui.js';
 import { rewardSound, winSound, unlockAudio } from './audio.js';
 import { buzz } from './haptics.js';
-import { say, hush } from './speech.js';
+import { say, hush, stopListening } from './speech.js';
 import { breakdown, PRAISE, WIN_LINES, pick } from './brain.js';
 import { crumbs, vault, streak } from './store.js';
 
@@ -116,5 +116,6 @@ export function enter() {
 }
 
 export function exit() {
+  stopListening();
   hush();
 }
