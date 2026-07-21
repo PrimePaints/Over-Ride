@@ -6,6 +6,7 @@ import { $ } from './ui.js';
 import { notes as noteStore, portrait, rhythm, vault, mind as mindStore, dossier, ago } from './store.js';
 import { rhythmSummary } from './notes.js';
 import { runSleep, sleepStatus } from './sleep.js';
+import { openReads, openPredictions, calibration, receipts, resolveRead, resolvePrediction, expireStale } from './reads.js';
 import { AIError } from './ai.js';
 
 let router = null;
@@ -125,6 +126,120 @@ function renderDossier() {
   $('#file-substrate-wrap').classList.toggle('hidden', !d.substrate.length);
 }
 
+function renderMentalist() {
+  const cal = calibration();
+  const calLine = $('#file-cal-line');
+  const bits = [];
+  if (cal.resolved) bits.push(`predictions: ${cal.hits}/${cal.resolved} right`);
+  if (cal.confirmed || cal.denied) bits.push(`reads: ${cal.confirmed} confirmed, ${cal.denied} denied`);
+  calLine.textContent = bits.length ? `Track record — ${bits.join(' · ')}` : 'No track record yet — reads and predictions appear after sleep cycles.';
+
+  // reads
+  const rbox = $('#file-reads');
+  rbox.innerHTML = '';
+  const or = openReads();
+  if (!or.length) {
+    const p = document.createElement('p');
+    p.className = 'dim';
+    p.textContent = 'No open reads.';
+    rbox.appendChild(p);
+  }
+  or.forEach((r) => {
+    const card = document.createElement('div');
+    card.className = 'note-card read-file-card';
+
+    const head = document.createElement('div');
+    head.className = 'note-head';
+    const lbl = document.createElement('span');
+    lbl.className = 'note-kind';
+    lbl.textContent = '🔮 read';
+    const conf = document.createElement('span');
+    conf.className = 'note-prov p-inferred';
+    conf.textContent = `${Math.round(r.confidence * 100)}%`;
+    head.append(lbl, conf);
+
+    const claim = document.createElement('p');
+    claim.className = 'note-text';
+    claim.textContent = r.claim;
+
+    const work = document.createElement('details');
+    work.className = 'read-work';
+    const sum = document.createElement('summary');
+    sum.textContent = 'show the working';
+    work.appendChild(sum);
+    const ul = document.createElement('ul');
+    receipts(r).forEach((t) => {
+      const li = document.createElement('li');
+      li.textContent = t;
+      ul.appendChild(li);
+    });
+    const test = document.createElement('li');
+    test.textContent = `how we'd know: ${r.test}`;
+    ul.appendChild(test);
+    work.appendChild(ul);
+
+    const row = document.createElement('div');
+    row.className = 'read-btns';
+    const yes = document.createElement('button');
+    yes.className = 'chip small';
+    yes.textContent = "✓ that's me";
+    const no = document.createElement('button');
+    no.className = 'chip small';
+    no.textContent = '✗ off the mark';
+    yes.addEventListener('click', () => { resolveRead(r.id, true); renderMentalist(); renderNotes(); });
+    no.addEventListener('click', () => { resolveRead(r.id, false); renderMentalist(); renderNotes(); });
+    row.append(yes, no);
+
+    card.append(head, claim, work, row);
+    rbox.appendChild(card);
+  });
+
+  // predictions
+  const pbox = $('#file-preds');
+  pbox.innerHTML = '';
+  const op = openPredictions();
+  if (!op.length) {
+    const p = document.createElement('p');
+    p.className = 'dim';
+    p.textContent = 'No open predictions.';
+    pbox.appendChild(p);
+  }
+  op.forEach((p) => {
+    const card = document.createElement('div');
+    card.className = 'note-card';
+
+    const head = document.createElement('div');
+    head.className = 'note-head';
+    const lbl = document.createElement('span');
+    lbl.className = 'note-kind';
+    lbl.textContent = '🎯 prediction';
+    const due = document.createElement('span');
+    due.className = 'dim';
+    const days = Math.ceil((p.due - Date.now()) / 864e5);
+    due.textContent = days > 0 ? `checkable in ${days}d` : 'due — did it happen?';
+    head.append(lbl, due);
+
+    const claim = document.createElement('p');
+    claim.className = 'note-text';
+    claim.textContent = p.claim;
+
+    const row = document.createElement('div');
+    row.className = 'read-btns';
+    const yes = document.createElement('button');
+    yes.className = 'chip small';
+    yes.textContent = '✓ came true';
+    const no = document.createElement('button');
+    no.className = 'chip small';
+    no.textContent = '✗ didn\'t';
+    yes.addEventListener('click', () => { resolvePrediction(p.id, true); renderMentalist(); renderNotes(); });
+    no.addEventListener('click', () => { resolvePrediction(p.id, false); renderMentalist(); renderNotes(); });
+    row.append(yes, no);
+
+    card.append(head, claim, row);
+    pbox.appendChild(card);
+  });
+}
+
 async function sleepNow() {
   if (sleepingHere) return;
   sleepingHere = true;
@@ -133,6 +248,7 @@ async function sleepNow() {
   try {
     await runSleep();
     renderDossier();
+    renderMentalist();
     renderNotes();
   } catch (err) {
     const e = $('#file-sleep-err');
@@ -277,9 +393,11 @@ export function init(r) {
 }
 
 export function enter() {
+  expireStale();
   $('#file-portrait').value = portrait.get();
   renderSleepRow();
   renderDossier();
+  renderMentalist();
   renderMatrixCard();
   renderRhythm();
   renderVaultLine();

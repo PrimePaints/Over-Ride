@@ -141,6 +141,10 @@
       <span>🌙 slept on it — the dossier grew</span>
       <button id="slept-view">view</button>
     </div>
+    <div class="noted-chip hidden" id="read-chip">
+      <span>🔮 I have a new read on you</span>
+      <button id="read-open">see it</button>
+    </div>
     <div class="handoff-input-row chat-row">
       <input type="text" id="chat-input" class="big-input" placeholder="talk to me…" autocomplete="off">
       <button class="mic-btn" id="chat-mic" aria-label="Speak your message">🎤</button>
@@ -186,6 +190,13 @@
     <div class="file-sec hidden" id="file-substrate-wrap">
       <p class="settings-h">Substrate <span class="dim">(slow-moving tendencies, hedged)</span></p>
       <div class="file-card"><ul class="substrate-list" id="file-substrate"></ul></div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Reads &amp; predictions <span class="dim">(a system that can be visibly wrong earns belief)</span></p>
+      <div class="file-card"><p class="dim" id="file-cal-line"></p></div>
+      <div id="file-reads" class="file-notes"></div>
+      <div id="file-preds" class="file-notes"></div>
     </div>
 
     <div class="file-sec">

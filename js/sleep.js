@@ -6,6 +6,7 @@
 import { completeJSON } from './ai.js';
 import { notes as noteStore, dossier, sleepMeter } from './store.js';
 import { record, decayScore } from './notes.js';
+import { addReads, addPredictions, openReads, openPredictions, calibration } from './reads.js';
 
 const IMP_THRESHOLD = 120;    // accumulated note-importance that triggers a cycle
 const SESSION_THRESHOLD = 10; // ...or this many chat sessions, whichever first
@@ -30,7 +31,7 @@ export function sleepStatus() {
 const SLEEP_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['merges', 'supersede', 'patterns', 'substrate', 'insights', 'profile'],
+  required: ['merges', 'supersede', 'patterns', 'substrate', 'insights', 'profile', 'reads', 'predictions'],
   properties: {
     merges: {
       type: 'array',
@@ -87,6 +88,29 @@ const SLEEP_SCHEMA = {
       },
     },
     profile: { type: 'string', description: 'the distilled read, ≤350 words' },
+    reads: {
+      type: 'array',
+      items: {
+        type: 'object', additionalProperties: false, required: ['claim', 'confidence', 'test', 'evidence'],
+        properties: {
+          claim: { type: 'string', description: 'a specific, checkable hypothesis about the user — specific enough to be WRONG' },
+          confidence: { type: 'number', description: '0 to 1' },
+          test: { type: 'string', description: 'what observable event would confirm or refute this' },
+          evidence: { type: 'array', items: { type: 'string' }, description: 'note ids, minimum 2' },
+        },
+      },
+    },
+    predictions: {
+      type: 'array',
+      items: {
+        type: 'object', additionalProperties: false, required: ['claim', 'horizon_days', 'evidence'],
+        properties: {
+          claim: { type: 'string', description: 'a dated, falsifiable call about what will happen' },
+          horizon_days: { type: 'number', description: 'within how many days it becomes checkable, 1-30' },
+          evidence: { type: 'array', items: { type: 'string' }, description: 'note ids, minimum 2' },
+        },
+      },
+    },
   },
 };
 
@@ -100,6 +124,8 @@ You receive the current dossier and the active field notes (each with an id, kin
 4. SUBSTRATE — slow-moving tendencies, stated values, energy rhythms, as hedged behavioral descriptions ("tends to X when Y"), each citing at least 2 note ids. Max ${MAX_SUBSTRATE}.
 5. INSIGHTS — 0-3 genuinely NEW higher-level observations that connect notes, each citing at least 2 note ids. Return an empty array if nothing new emerged; forced insights are worse than none.
 6. PROFILE — rewrite the distilled read: at most 350 words, written to the companion about the user ("They…"), leading with whatever most helps the companion respond well. Mirror the user's own vocabulary where the notes preserve it.
+7. READS — 0-3 NEW hypotheses about the user, mentalist-grade: each must be specific enough to be wrong, cite at least 2 note ids, and carry a "test" naming the observable event that would confirm or refute it. Run the anti-Barnum linter before including one: reject anything that would be true of most people, anything awarding a trait and its opposite, and anything that is unverifiable feel-good filler. Do not re-issue reads already listed as open. Fewer, sharper reads beat many vague ones — an empty array is a fine answer.
+8. PREDICTIONS — 0-2 dated, falsifiable calls ("within N days, X"), each citing at least 2 note ids, and only where a mapped pattern makes the call meaningfully better than a coin flip. Your track record is shown to the user; protect it.
 
 Language contract (hard rules): patterns are verbs with contexts, never identity nouns — "tends to defer ambiguous tasks on low-sleep days", never "is an avoider". No diagnostic or clinical labels of any kind. Frame struggles as areas to re-test, not fixed traits. Flattery is not data; discard praise-shaped notes rather than encoding them.`;
 
@@ -117,6 +143,18 @@ function buildInput(sendNotes, aliasOf) {
   cur += d.substrate.length
     ? 'substrate:\n' + d.substrate.map(s => `- ${s.claim} (confidence ${s.confidence})`).join('\n') + '\n'
     : 'substrate: (none yet)\n';
+  const or = openReads();
+  cur += or.length
+    ? 'open reads (do not re-issue):\n' + or.map(r => `- ${r.claim}`).join('\n') + '\n'
+    : '';
+  const op = openPredictions();
+  cur += op.length
+    ? 'open predictions (do not re-issue):\n' + op.map(p => `- ${p.claim}`).join('\n') + '\n'
+    : '';
+  const cal = calibration();
+  if (cal.resolved || cal.confirmed || cal.denied) {
+    cur += `track record so far: predictions ${cal.hits}/${cal.resolved} right; reads ${cal.confirmed} confirmed, ${cal.denied} denied by the user\n`;
+  }
   return `${cur}\nACTIVE FIELD NOTES:\n${lines.join('\n')}`;
 }
 
@@ -222,6 +260,10 @@ export async function runSleep() {
     slept: Date.now(),
   });
 
+  // 7-8. reads & predictions — evidence + falsifiability enforced in reads.js
+  const newReads = addReads((out.reads || []).map(r => ({ ...r, evidence: validEvidence(r.evidence) })));
+  const newPreds = addPredictions((out.predictions || []).map(p => ({ ...p, evidence: validEvidence(p.evidence) })));
+
   // housekeeping: purge old tombstones/superseded records for good
   const cutoff = Date.now() - TOMBSTONE_DAYS * 864e5;
   noteStore.all()
@@ -229,5 +271,5 @@ export async function runSleep() {
     .forEach(n => noteStore.remove(n.id));
 
   sleepMeter.reset();
-  return { patterns: patterns.length, insights, merged, superseded };
+  return { patterns: patterns.length, insights, merged, superseded, reads: newReads, predictions: newPreds };
 }

@@ -6,6 +6,7 @@
 import { completeJSON } from './ai.js';
 import { mind as mindStore, crumbs, vault, portrait, dossier, ago } from './store.js';
 import { relevant, rhythmSummary, OBS_OPEN, OBS_CLOSE } from './notes.js';
+import { openReads, openPredictions, calibration, recentSpiral } from './reads.js';
 
 // ---------- The screening ----------
 // kind: 'single' → tap one chip (auto-advances), 'multi' → toggle chips,
@@ -193,9 +194,31 @@ export function chatSystem(latestMsg = '') {
     sys += `\n\nTHE FILE (your accumulated field intelligence — the user can read and edit all of it in The File screen; treat inferred notes as hypotheses to re-test, not facts):\n${parts.join('\n')}`;
   }
 
+  // the mentalist layer: open reads, open predictions, and the track record
+  const or = openReads();
+  const op = openPredictions();
+  const cal = calibration();
+  if (or.length || op.length || cal.resolved) {
+    sys += '\n\nYOUR MENTALIST LEDGER:';
+    if (or.length) {
+      sys += `\n- Open reads (hypotheses the user hasn't ruled on — you may voice ONE when the moment is calm and it's genuinely relevant, always with its receipts, phrased as a guess to check, never as a verdict):` +
+        or.map(r => `\n  · ${r.claim} (${Math.round(r.confidence * 100)}%)`).join('');
+    }
+    if (op.length) {
+      sys += `\n- Open predictions you've made:` + op.map(p => `\n  · ${p.claim}`).join('');
+    }
+    if (cal.resolved || cal.confirmed || cal.denied) {
+      sys += `\n- Track record (the user can see this too): predictions ${cal.hits}/${cal.resolved} right; reads ${cal.confirmed} confirmed, ${cal.denied} denied. Protect it — no shotgunning.`;
+    }
+  }
+
   const recent = crumbs.recent(4).map(c => `- ${c.text} (${ago(c.ts)})`).join('\n');
   sys += `\n\nLIVE CONTEXT (right now):\n- Local time: ${new Date().toLocaleString([], { weekday: 'long', hour: '2-digit', minute: '2-digit' })}` +
     `\n${recent ? '- Recent app activity:\n' + recent : '- No recent app activity.'}`;
+
+  if (recentSpiral()) {
+    sys += `\n- ⚠ They hit a spiral within the last half hour. Stabilization first: ground, shrink, hand them one step. No reads, no pattern analysis, no predictions right now unless they explicitly ask.`;
+  }
 
   sys += `\n\n${OBS_PROTOCOL}`;
   return sys;

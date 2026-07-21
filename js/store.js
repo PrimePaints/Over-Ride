@@ -13,6 +13,8 @@ const DEFAULTS = {
   lastHarvest: 0,   // ts of the newest crumb already harvested into telemetry
   dossier: { patterns: [], substrate: [], profileText: '', slept: 0 },
   sleepMeter: { impSum: 0, sessions: 0 },  // accumulates toward the next sleep cycle
+  reads: [],       // {id, ts, claim, confidence, evidence, test, status, seen, resolvedTs}
+  predictions: [], // {id, ts, claim, due, evidence, status, resolvedTs}
   vault: [],        // {id, ts, type, title, extra, done}
   crumbs: [],       // {ts, text} — passive context breadcrumbs for the Retracer
   streak: 0,        // lifetime micro-steps completed
@@ -134,6 +136,26 @@ export const sleepMeter = {
   bumpImp(n) { state.sleepMeter.impSum += n; save(); },
   bumpSession() { state.sleepMeter.sessions++; save(); },
   reset() { state.sleepMeter = { impSum: 0, sessions: 0 }; save(); },
+};
+
+export const reads = {
+  all: () => [...state.reads],
+  add(r) { state.reads.push(r); save(); },
+  update(id, patch) {
+    const x = state.reads.find(r => r.id === id);
+    if (x) { Object.assign(x, patch); save(); }
+  },
+  replaceAll(list) { state.reads = list; save(); },
+};
+
+export const predictions = {
+  all: () => [...state.predictions],
+  add(p) { state.predictions.push(p); save(); },
+  update(id, patch) {
+    const x = state.predictions.find(p => p.id === id);
+    if (x) { Object.assign(x, patch); save(); }
+  },
+  replaceAll(list) { state.predictions = list; save(); },
 };
 
 export const crumbs = {

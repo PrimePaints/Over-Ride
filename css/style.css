@@ -482,6 +482,22 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .substrate-list li { font-size: .9rem; line-height: 1.45; }
 .substrate-list .note-del { padding: 0 4px; }
 
+/* reads & predictions */
+.read-card { border: 1px solid #4c2a8f; max-width: 92%; }
+.read-lbl { font-size: .7rem; text-transform: uppercase; letter-spacing: .15em; color: #a685f0; font-weight: 700; margin-bottom: 6px; }
+.read-claim { font-size: 1rem; line-height: 1.45; }
+.read-work { margin: 10px 0 4px; }
+.read-work summary { color: var(--dim); font-size: .8rem; cursor: pointer; }
+.read-work ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.read-work li { font-size: .8rem; color: var(--dim); line-height: 1.4; padding-left: 12px; position: relative; }
+.read-work li::before { content: '·'; position: absolute; left: 0; }
+.read-work li:last-child { color: #a685f0; }
+.read-btns { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.read-btns .chip.small { padding: 9px 14px; }
+.chip.ghosted { background: none; border-style: dashed; color: var(--dim); }
+.read-file-card { border-left: 4px solid #a685f0; }
+#file-preds { margin-top: 10px; }
+
 /* ============ SETTINGS ============ */
 .settings-h { color: var(--dim); font-size: .75rem; text-transform: uppercase; letter-spacing: .2em; margin: 18px 4px 4px; }
 .setting-row.column { flex-direction: column; align-items: stretch; gap: 10px; }
