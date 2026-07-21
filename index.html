@@ -50,6 +50,93 @@
       <span class="t-label">Brain Dump</span>
       <span class="t-sub">get it out of my head</span>
     </button>
+    <button class="triage-btn t-copilot" data-go="copilot">
+      <span class="t-emoji">◉</span>
+      <span class="t-label">Talk To Me</span>
+      <span class="t-sub" id="copilot-sub">an AI co-pilot, tuned to your brain</span>
+    </button>
+  </div>
+</section>
+
+<!-- ============ CO-PILOT: SCREENING + CALIBRATED CHAT ============ -->
+<section id="screen-copilot" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2 id="cp-title">Co-Pilot</h2>
+    <div class="home-header-btns">
+      <button class="icon-btn hidden" id="cp-clear" aria-label="Clear conversation">🧹</button>
+      <button class="icon-btn hidden" id="cp-recal" aria-label="Redo the personality screening">🎛️</button>
+    </div>
+  </header>
+
+  <!-- no API key yet -->
+  <div id="cp-setup" class="cp-phase centered hidden">
+    <p class="copilot-line">This is where your co-pilot lives —<br>an AI calibrated to your exact brain.</p>
+    <p class="dim cp-note">It needs an Anthropic API key to talk. The key — and everything you tell it — travels straight from this phone to Anthropic. Over-Ride has no server and stores nothing anywhere else.</p>
+    <button class="pill-btn" id="cp-to-settings">Add my API key in Settings →</button>
+    <p class="dim cp-note">No key yet? Create one at console.anthropic.com.</p>
+  </div>
+
+  <!-- key present, matrix not built (or rebuilding) -->
+  <div id="cp-intro" class="cp-phase centered hidden">
+    <p class="copilot-line">First: the screening.</p>
+    <p class="dim cp-note">Ten quick questions about how your mind works — what spirals feel like, what helps, what makes everything worse. Your answers become a <b>personality matrix</b>: the standing instructions your co-pilot lives by. You'll see it before it's locked in.</p>
+    <button class="pill-btn" id="cp-start-cal">Start the screening →</button>
+    <button class="ghost-btn" data-go="home">not now</button>
+  </div>
+
+  <!-- the screening -->
+  <div id="cp-cal" class="cp-phase hidden">
+    <div class="momentum-bar"><div class="momentum-fill" id="cal-fill"></div></div>
+    <p class="step-count" id="cal-count">1 / 10</p>
+    <p class="cal-q" id="cal-q" role="status"></p>
+    <p class="dim cal-sub" id="cal-sub"></p>
+    <div class="chip-grid" id="cal-chips"></div>
+    <div id="cal-free-wrap" class="cal-free hidden">
+      <textarea id="cal-free" class="dump-textarea" rows="5" placeholder="type as much or as little as you want…"></textarea>
+      <button class="mic-btn" id="cal-mic" aria-label="Speak your answer">🎤</button>
+    </div>
+    <div class="cal-nav">
+      <button class="ghost-btn" id="cal-back">← back</button>
+      <button class="pill-btn" id="cal-next">Next →</button>
+    </div>
+  </div>
+
+  <!-- building the matrix -->
+  <div id="cp-synth" class="cp-phase centered hidden">
+    <div id="synth-spin">
+      <div class="pulse-ring small violet"><div class="pulse-core"></div></div>
+      <p class="copilot-line">Reading your answers…<br><span class="dim">building your personality matrix</span></p>
+    </div>
+    <div id="synth-err" class="hidden">
+      <p class="copilot-line">Hit a snag.</p>
+      <p class="dim cp-note" id="synth-err-msg"></p>
+      <button class="pill-btn" id="synth-retry">Try again</button>
+      <button class="ghost-btn" id="synth-back">back to the questions</button>
+    </div>
+  </div>
+
+  <!-- review & lock in -->
+  <div id="cp-result" class="cp-phase hidden">
+    <p class="step-count">your co-pilot</p>
+    <h3 class="mx-codename" id="mx-codename"></h3>
+    <p class="mx-summary" id="mx-summary"></p>
+    <div class="mx-cols">
+      <div><p class="mx-h">Always</p><ul class="mx-list" id="mx-do"></ul></div>
+      <div><p class="mx-h dont">Never</p><ul class="mx-list" id="mx-dont"></ul></div>
+    </div>
+    <button class="pill-btn" id="mx-lock">Sounds right — lock it in ✓</button>
+    <button class="ghost-btn" id="mx-redo">redo the screening</button>
+  </div>
+
+  <!-- the calibrated chat -->
+  <div id="cp-chat" class="cp-phase hidden">
+    <div id="chat-log" class="chat-log"></div>
+    <div class="handoff-input-row chat-row">
+      <input type="text" id="chat-input" class="big-input" placeholder="talk to me…" autocomplete="off">
+      <button class="mic-btn" id="chat-mic" aria-label="Speak your message">🎤</button>
+      <button class="mic-btn send" id="chat-send" aria-label="Send">➤</button>
+    </div>
   </div>
 </section>
 
@@ -224,9 +311,21 @@
       <span>Noise volume</span>
       <input type="range" id="set-volume" min="0" max="100" value="60">
     </label>
+    <p class="settings-h">AI co-pilot</p>
+    <label class="setting-row column">
+      <span>Anthropic API key <span class="dim">(never leaves this device)</span></span>
+      <input type="password" id="set-apikey" class="big-input key-input" placeholder="sk-ant-…" autocomplete="off">
+    </label>
+    <label class="setting-row">
+      <span>Model</span>
+      <select id="set-model"></select>
+    </label>
+    <button class="pill-btn alt" id="set-recal">🎛️ Run the personality screening</button>
+
     <button class="pill-btn alt danger" id="set-wipe">Wipe all my data</button>
-    <p class="dim about">Over-Ride keeps everything on this device. Nothing is uploaded, ever.
-    The "AI" co-pilot is a local rule engine: private, offline, instant.</p>
+    <p class="dim about">Over-Ride keeps everything on this device — your vault, your matrix, your key.
+    The built-in tools work offline. When you talk to the AI co-pilot, your messages go
+    straight from your phone to Anthropic and nowhere else.</p>
   </div>
 </section>
 

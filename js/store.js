@@ -4,6 +4,9 @@ const KEY = 'override-v1';
 
 const DEFAULTS = {
   settings: { voice: true, haptics: true, noise: 'brown', volume: 60 },
+  ai: { apiKey: '', model: 'claude-opus-4-8' },
+  mind: null,       // {answers, matrix, ts} — the co-pilot's personality matrix
+  chat: [],         // {role, text, ts} — co-pilot conversation, capped at 40
   vault: [],        // {id, ts, type, title, extra, done}
   crumbs: [],       // {ts, text} — passive context breadcrumbs for the Retracer
   streak: 0,        // lifetime micro-steps completed
@@ -20,6 +23,7 @@ function load() {
       ...structuredClone(DEFAULTS),
       ...parsed,
       settings: { ...DEFAULTS.settings, ...(parsed.settings || {}) },
+      ai: { ...DEFAULTS.ai, ...(parsed.ai || {}) },
     };
   } catch {
     return structuredClone(DEFAULTS);
@@ -52,6 +56,27 @@ export const vault = {
     state.vault = state.vault.filter(i => !i.done);
     save();
   },
+};
+
+export const ai = {
+  get: (k) => state.ai[k],
+  set: (k, v) => { state.ai[k] = v; save(); },
+};
+
+export const mind = {
+  get: () => state.mind,
+  set(m) { state.mind = m; save(); },
+  clear() { state.mind = null; save(); },
+};
+
+export const chat = {
+  all: () => [...state.chat],
+  push(role, text) {
+    state.chat.push({ role, text, ts: Date.now() });
+    state.chat = state.chat.slice(-40);
+    save();
+  },
+  clear() { state.chat = []; save(); },
 };
 
 export const crumbs = {

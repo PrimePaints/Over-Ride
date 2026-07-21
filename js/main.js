@@ -2,18 +2,20 @@
 // Design rule: every screen must be escapable in one tap, nothing punishes you.
 
 import { $ } from './ui.js';
-import { settings, vault, wipeAll } from './store.js';
+import { settings, vault, mind, ai as aiStore, wipeAll } from './store.js';
 import { unlockAudio } from './audio.js';
 import { buzz } from './haptics.js';
 import { primeTTS } from './speech.js';
+import { MODELS, isConfigured } from './ai.js';
 import * as defib from './defib.js';
 import * as retrace from './retrace.js';
 import * as stepper from './stepper.js';
 import * as dump from './dump.js';
+import * as copilot from './copilot.js';
 import { renderCard } from './dump.js';
 
 // ---------- router ----------
-const flows = { defib, retrace, stepper, dump };
+const flows = { defib, retrace, stepper, dump, copilot };
 let current = 'home';
 
 function show(name) {
@@ -22,6 +24,7 @@ function show(name) {
   const el = $('#screen-' + name);
   (el || $('#screen-home')).classList.add('active');
   current = el ? name : 'home';
+  if (current === 'home') updateCopilotSub();
   if (current === 'vault') renderVault();
   if (flows[current] && flows[current].enter) flows[current].enter();
   window.scrollTo(0, 0);
@@ -72,6 +75,15 @@ document.addEventListener('focusin', (e) => {
   }
 });
 
+// ---------- home: co-pilot state hint ----------
+function updateCopilotSub() {
+  const sub = $('#copilot-sub');
+  if (!isConfigured()) sub.textContent = 'an AI co-pilot, tuned to your brain';
+  else if (!mind.get()?.matrix) sub.textContent = 'connected — run the screening';
+  else sub.textContent = `“${mind.get().matrix.codename}” is ready`;
+}
+updateCopilotSub();
+
 // ---------- vault ----------
 function renderVault() {
   const list = $('#vault-list');
@@ -109,6 +121,24 @@ function bindSettings() {
   haptics.addEventListener('change', () => settings.set('haptics', haptics.checked));
   noise.addEventListener('change', () => settings.set('noise', noise.value));
   volume.addEventListener('change', () => settings.set('volume', parseInt(volume.value, 10)));
+
+  // AI co-pilot
+  const apiKey = $('#set-apikey');
+  const model = $('#set-model');
+  MODELS.forEach((m) => {
+    const o = document.createElement('option');
+    o.value = m.id;
+    o.textContent = m.label;
+    model.appendChild(o);
+  });
+  apiKey.value = aiStore.get('apiKey');
+  model.value = aiStore.get('model');
+  apiKey.addEventListener('change', () => aiStore.set('apiKey', apiKey.value.trim()));
+  model.addEventListener('change', () => aiStore.set('model', model.value));
+  $('#set-recal').addEventListener('click', () => {
+    sessionStorage.setItem('override-recal', '1');
+    router.go('copilot');
+  });
 
   // two-tap confirm — native confirm() dialogs are jarring and unstylable
   const wipe = $('#set-wipe');
