@@ -1,8 +1,11 @@
 name: Deploy to GitHub Pages
 
+# The github-pages environment only permits deploys from the repo's default
+# branch. Triggering on other branches creates runs that get rejected — and
+# via the concurrency group they can cancel the run that would have worked.
 on:
   push:
-    branches: [main, master, claude/override-cognitive-app-5jcnna]
+    branches: [claude/override-cognitive-app-5jcnna]
   workflow_dispatch:
 
 permissions:
