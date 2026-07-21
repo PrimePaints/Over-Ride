@@ -3,11 +3,14 @@
 // self-portrait section is user-authored and the AI never writes there.
 
 import { $ } from './ui.js';
-import { notes as noteStore, portrait, rhythm, vault, mind as mindStore, ago } from './store.js';
+import { notes as noteStore, portrait, rhythm, vault, mind as mindStore, dossier, ago } from './store.js';
 import { rhythmSummary } from './notes.js';
+import { runSleep, sleepStatus } from './sleep.js';
+import { AIError } from './ai.js';
 
 let router = null;
 let filter = 'all';
+let sleepingHere = false;
 
 const KIND_META = {
   pattern: { icon: '♻️', label: 'Pattern' },
@@ -17,6 +20,128 @@ const KIND_META = {
   value: { icon: '🧭', label: 'Value' },
   fact: { icon: '📌', label: 'Fact' },
 };
+
+function renderSleepRow() {
+  const s = sleepStatus();
+  const line = $('#file-sleep-line');
+  line.textContent = s.slept
+    ? `Last slept ${ago(s.slept)} · ${s.impSum} importance points waiting${s.due ? ' — a cycle is due' : ''}`
+    : 'Never slept yet — the dossier below fills in after the first cycle.';
+  $('#file-sleep-btn').disabled = sleepingHere;
+  $('#file-sleep-btn').textContent = sleepingHere ? '🌙 sleeping…' : '🌙 Sleep on it now';
+}
+
+function renderDossier() {
+  const d = dossier.get();
+
+  const read = $('#file-read');
+  read.textContent = d.profileText || 'No distilled read yet. It gets written during the first sleep cycle.';
+
+  const box = $('#file-patterns');
+  box.innerHTML = '';
+  if (!d.patterns.length) {
+    const p = document.createElement('p');
+    p.className = 'dim';
+    p.textContent = 'No patterns mapped yet — they need enough field notes to cite as evidence.';
+    box.appendChild(p);
+  }
+  d.patterns.forEach((pat, idx) => {
+    const card = document.createElement('div');
+    card.className = 'pattern-card';
+
+    const head = document.createElement('div');
+    head.className = 'note-head';
+    const name = document.createElement('span');
+    name.className = 'pattern-name';
+    name.textContent = pat.name;
+    const conf = document.createElement('span');
+    conf.className = 'note-prov p-inferred';
+    conf.textContent = `${Math.round(pat.confidence * 100)}% · ${pat.evidence.length} notes`;
+    head.append(name, conf);
+
+    const chain = document.createElement('p');
+    chain.className = 'pattern-chain';
+    chain.textContent = `⚡ ${pat.trigger} → ♻️ ${pat.loop} → 🎁 ${pat.payoff}`;
+
+    const bar = document.createElement('div');
+    bar.className = 'conf-bar';
+    const fill = document.createElement('div');
+    fill.className = 'conf-fill';
+    fill.style.width = Math.round(pat.confidence * 100) + '%';
+    bar.appendChild(fill);
+
+    card.append(head, chain, bar);
+
+    if (pat.tells.length || pat.exits.length) {
+      const meta = document.createElement('p');
+      meta.className = 'pattern-meta dim';
+      const bits = [];
+      if (pat.tells.length) bits.push('tells: ' + pat.tells.join(' · '));
+      if (pat.exits.length) bits.push('exits that worked: ' + pat.exits.join(' · '));
+      meta.textContent = bits.join('  —  ');
+      card.appendChild(meta);
+    }
+
+    const foot = document.createElement('div');
+    foot.className = 'note-foot';
+    const spacer = document.createElement('span');
+    const del = document.createElement('button');
+    del.className = 'note-del';
+    del.textContent = '✕ not me — forget this';
+    del.setAttribute('aria-label', 'Delete this pattern');
+    del.addEventListener('click', () => {
+      const d2 = dossier.get();
+      dossier.patch({ patterns: d2.patterns.filter((_, i) => i !== idx) });
+      renderDossier();
+    });
+    foot.append(spacer, del);
+    card.appendChild(foot);
+    box.appendChild(card);
+  });
+
+  const sub = $('#file-substrate');
+  sub.innerHTML = '';
+  if (d.substrate.length) {
+    d.substrate.forEach((s, idx) => {
+      const li = document.createElement('li');
+      const txt = document.createElement('span');
+      txt.textContent = `${s.claim} `;
+      const conf = document.createElement('span');
+      conf.className = 'dim';
+      conf.textContent = `(${Math.round(s.confidence * 100)}%)`;
+      const del = document.createElement('button');
+      del.className = 'note-del';
+      del.textContent = '✕';
+      del.setAttribute('aria-label', 'Delete this observation');
+      del.addEventListener('click', () => {
+        const d2 = dossier.get();
+        dossier.patch({ substrate: d2.substrate.filter((_, i) => i !== idx) });
+        renderDossier();
+      });
+      li.append(txt, conf, del);
+      sub.appendChild(li);
+    });
+  }
+  $('#file-substrate-wrap').classList.toggle('hidden', !d.substrate.length);
+}
+
+async function sleepNow() {
+  if (sleepingHere) return;
+  sleepingHere = true;
+  $('#file-sleep-err').classList.add('hidden');
+  renderSleepRow();
+  try {
+    await runSleep();
+    renderDossier();
+    renderNotes();
+  } catch (err) {
+    const e = $('#file-sleep-err');
+    e.textContent = err instanceof AIError ? err.message : 'The sleep cycle failed. Try again.';
+    e.classList.remove('hidden');
+  }
+  sleepingHere = false;
+  renderSleepRow();
+}
 
 function renderMatrixCard() {
   const m = mindStore.get()?.matrix;
@@ -148,10 +273,13 @@ export function init(r) {
   router = r;
   const ta = $('#file-portrait');
   ta.addEventListener('change', () => portrait.set(ta.value.trim().slice(0, 600)));
+  $('#file-sleep-btn').addEventListener('click', sleepNow);
 }
 
 export function enter() {
   $('#file-portrait').value = portrait.get();
+  renderSleepRow();
+  renderDossier();
   renderMatrixCard();
   renderRhythm();
   renderVaultLine();

@@ -4,7 +4,7 @@
 // person needs — and that matrix shapes every co-pilot reply from then on.
 
 import { completeJSON } from './ai.js';
-import { mind as mindStore, crumbs, vault, portrait, ago } from './store.js';
+import { mind as mindStore, crumbs, vault, portrait, dossier, ago } from './store.js';
 import { relevant, rhythmSummary, OBS_OPEN, OBS_CLOSE } from './notes.js';
 
 // ---------- The screening ----------
@@ -163,6 +163,19 @@ export function chatSystem(latestMsg = '') {
   const self = (portrait.get() || '').trim();
   if (self) {
     sys += `\n\nSELF-PORTRAIT (written by the user, in their own words — never contradict it, never rewrite it):\n${self.slice(0, 600)}`;
+  }
+
+  // The distilled read + mapped patterns, written by the sleep cycle.
+  const d = dossier.get();
+  if (d.profileText) {
+    sys += `\n\nDOSSIER (distilled by your sleep cycle from accumulated field notes; hypotheses to keep testing, not verdicts):\n${d.profileText}`;
+  }
+  if (d.patterns.length) {
+    const top = [...d.patterns].sort((a, b) => b.confidence - a.confidence).slice(0, 6);
+    sys += `\n\nPATTERNS YOU'VE MAPPED (trigger → loop → payoff):` + top.map(p =>
+      `\n- ${p.name} (confidence ${Math.round(p.confidence * 100)}%, ${p.evidence.length} notes): ${p.trigger} → ${p.loop} → ${p.payoff}` +
+      (p.tells.length ? ` | tells: ${p.tells.join('; ')}` : '') +
+      (p.exits.length ? ` | exits that worked: ${p.exits.join('; ')}` : '')).join('');
   }
 
   // The File: telemetry + the field notes most relevant to this message.

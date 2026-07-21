@@ -137,6 +137,10 @@
       <span>📝 <span id="noted-label">noted</span> — added to The File</span>
       <button id="noted-undo">undo</button>
     </div>
+    <div class="noted-chip hidden" id="slept-chip">
+      <span>🌙 slept on it — the dossier grew</span>
+      <button id="slept-view">view</button>
+    </div>
     <div class="handoff-input-row chat-row">
       <input type="text" id="chat-input" class="big-input" placeholder="talk to me…" autocomplete="off">
       <button class="mic-btn" id="chat-mic" aria-label="Speak your message">🎤</button>
@@ -158,6 +162,30 @@
     <div class="file-sec">
       <p class="settings-h">Self-portrait <span class="dim">(your words — the AI never writes here)</span></p>
       <textarea id="file-portrait" class="dump-textarea" rows="3" maxlength="600" placeholder="Who are you, in your own words? This is read before every reply."></textarea>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Sleep cycle <span class="dim">(consolidates notes into understanding)</span></p>
+      <div class="file-card">
+        <p class="dim" id="file-sleep-line"></p>
+        <button class="pill-btn alt sleep-btn" id="file-sleep-btn">🌙 Sleep on it now</button>
+        <p class="dim err hidden" id="file-sleep-err"></p>
+      </div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">The distilled read</p>
+      <div class="file-card"><p class="file-read" id="file-read"></p></div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Patterns <span class="dim">(trigger → loop → payoff — every one cites its evidence)</span></p>
+      <div id="file-patterns" class="file-notes"></div>
+    </div>
+
+    <div class="file-sec hidden" id="file-substrate-wrap">
+      <p class="settings-h">Substrate <span class="dim">(slow-moving tendencies, hedged)</span></p>
+      <div class="file-card"><ul class="substrate-list" id="file-substrate"></ul></div>
     </div>
 
     <div class="file-sec">

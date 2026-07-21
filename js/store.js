@@ -11,6 +11,8 @@ const DEFAULTS = {
   selfPortrait: '', // user-authored, the AI never writes here
   rhythm: { hourly: new Array(24).fill(0), spirals: new Array(24).fill(0) },
   lastHarvest: 0,   // ts of the newest crumb already harvested into telemetry
+  dossier: { patterns: [], substrate: [], profileText: '', slept: 0 },
+  sleepMeter: { impSum: 0, sessions: 0 },  // accumulates toward the next sleep cycle
   vault: [],        // {id, ts, type, title, extra, done}
   crumbs: [],       // {ts, text} — passive context breadcrumbs for the Retracer
   streak: 0,        // lifetime micro-steps completed
@@ -33,6 +35,8 @@ function load() {
         hourly: Array.isArray(rhythm.hourly) && rhythm.hourly.length === 24 ? rhythm.hourly : new Array(24).fill(0),
         spirals: Array.isArray(rhythm.spirals) && rhythm.spirals.length === 24 ? rhythm.spirals : new Array(24).fill(0),
       },
+      dossier: { ...structuredClone(DEFAULTS.dossier), ...(parsed.dossier || {}) },
+      sleepMeter: { ...DEFAULTS.sleepMeter, ...(parsed.sleepMeter || {}) },
     };
   } catch {
     return structuredClone(DEFAULTS);
@@ -118,6 +122,18 @@ export const rhythm = {
 export const harvestMark = {
   get: () => state.lastHarvest,
   set(ts) { state.lastHarvest = ts; save(); },
+};
+
+export const dossier = {
+  get: () => state.dossier,
+  patch(p) { Object.assign(state.dossier, p); save(); },
+};
+
+export const sleepMeter = {
+  get: () => ({ ...state.sleepMeter }),
+  bumpImp(n) { state.sleepMeter.impSum += n; save(); },
+  bumpSession() { state.sleepMeter.sessions++; save(); },
+  reset() { state.sleepMeter = { impSum: 0, sessions: 0 }; save(); },
 };
 
 export const crumbs = {

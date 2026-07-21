@@ -3,7 +3,7 @@
 // Mentalist Engine: atomic timestamped observations with importance and
 // provenance, consolidated later (Phase 2) by the sleep cycle.
 
-import { notes as noteStore, crumbs, rhythm, harvestMark } from './store.js';
+import { notes as noteStore, crumbs, rhythm, harvestMark, sleepMeter } from './store.js';
 
 const MAX_ACTIVE = 1500;
 const KINDS = ['pattern', 'trigger', 'state', 'win', 'value', 'fact'];
@@ -108,6 +108,7 @@ export function record(o) {
       // an observation the user states outright upgrades an inferred one
       prov: o.prov === 'stated' ? 'stated' : dupe.prov,
     });
+    sleepMeter.bumpImp(o.imp); // reinforcement counts toward the next sleep cycle
     return { id: dupe.id, reinforced: true };
   }
   const note = {
@@ -123,6 +124,7 @@ export function record(o) {
     kw: o.kw,
   };
   noteStore.add(note);
+  sleepMeter.bumpImp(o.imp);
   enforceCap();
   return { id: note.id, reinforced: false };
 }

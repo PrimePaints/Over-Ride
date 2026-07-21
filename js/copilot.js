@@ -8,6 +8,8 @@ import { crumbs, chat, mind as mindStore } from './store.js';
 import { isConfigured, streamChat, AIError } from './ai.js';
 import { QUESTIONS, synthesize, saveMatrix, hasMatrix, matrix, chatSystem } from './mind.js';
 import { stripObs, parseObs, record, unrecord, harvestTelemetry } from './notes.js';
+import { needSleep, runSleep } from './sleep.js';
+import { sleepMeter } from './store.js';
 
 let router = null;
 let phase = 'setup';
@@ -126,10 +128,26 @@ function lockIn() {
   enterChat();
 }
 
+// ---------- the sleep cycle (auto-triggered, runs in the background) ----------
+let sleeping = false;
+
+async function maybeSleep() {
+  if (sleeping || !needSleep()) return;
+  sleeping = true;
+  try {
+    await runSleep();
+    if (phase === 'chat') $('#slept-chip').classList.remove('hidden');
+  } catch { /* quiet failure — the meter keeps accumulating, next entry retries */ }
+  sleeping = false;
+}
+
 // ---------- chat ----------
 function enterChat() {
   show('cp-chat');
+  $('#slept-chip').classList.add('hidden');
+  sleepMeter.bumpSession();
   renderLog();
+  maybeSleep(); // fire-and-forget; the chat works normally while it runs
 }
 
 function renderLog() {
@@ -258,6 +276,7 @@ export function init(r) {
     unrecord(lastNoted);
     hideNotedChip();
   });
+  $('#slept-view').addEventListener('click', () => router.go('file'));
 
   $('#chat-send').addEventListener('click', () => send());
   $('#chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
