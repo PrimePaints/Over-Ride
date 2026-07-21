@@ -419,6 +419,54 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .mic-btn.send { background: #6c3fd4; color: #fff; }
 .mic-btn.send:disabled { opacity: .4; }
 
+/* noted chip */
+.noted-chip {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  background: var(--card); border: 1px solid #2a2a38; border-radius: 999px;
+  font-size: .8rem; color: var(--dim);
+  padding: 8px 16px; margin-bottom: 10px; flex-shrink: 0;
+}
+.noted-chip button {
+  background: none; border: none; color: #a685f0; font-size: .8rem;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px; padding: 4px;
+}
+
+/* ============ THE FILE ============ */
+.file-sections { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; min-height: 0; }
+.file-sec { margin-bottom: 10px; }
+.file-card {
+  background: var(--card); border-radius: 16px; padding: 14px 16px;
+}
+.file-mx-name { font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; }
+.file-card .dim { font-size: .88rem; line-height: 1.45; }
+
+.rh-bars { display: flex; align-items: flex-end; gap: 3px; height: 72px; margin-bottom: 10px; }
+.rh-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; height: 100%; position: relative; }
+.rh-bar { width: 100%; min-height: 2px; border-radius: 3px 3px 0 0; background: #4c2a8f; }
+.rh-bar.spiky { background: var(--spiral); }
+.rh-lbl { position: absolute; bottom: -14px; font-size: .55rem; color: var(--dim); }
+
+.chip-grid.left { justify-content: flex-start; margin: 8px 0 12px; }
+.chip.small { font-size: .8rem; padding: 8px 14px; }
+#file-filter .chip.primary { background: #6c3fd4; border-color: #6c3fd4; color: #fff; }
+
+.file-notes { display: flex; flex-direction: column; gap: 10px; padding-bottom: 20px; }
+.note-card { background: var(--card); border-radius: 14px; padding: 12px 14px; }
+.note-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.note-kind { font-size: .7rem; text-transform: uppercase; letter-spacing: .12em; color: var(--dim); font-weight: 700; }
+.note-prov { font-size: .7rem; border-radius: 999px; padding: 2px 9px; font-weight: 700; }
+.note-prov.p-stated { background: rgba(34, 181, 115, .15); color: #4cc394; }
+.note-prov.p-inferred { background: rgba(166, 133, 240, .15); color: #a685f0; }
+.note-prov.p-behavioral { background: rgba(242, 155, 24, .15); color: #f2b04e; }
+.note-text { font-size: .95rem; line-height: 1.45; }
+.note-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.note-foot .dim { font-size: .75rem; }
+.note-del {
+  background: none; border: none; color: var(--dim); font-size: .75rem;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 2px; padding: 4px;
+}
+.note-del:active { color: var(--spiral); }
+
 /* ============ SETTINGS ============ */
 .settings-h { color: var(--dim); font-size: .75rem; text-transform: uppercase; letter-spacing: .2em; margin: 18px 4px 4px; }
 .setting-row.column { flex-direction: column; align-items: stretch; gap: 10px; }

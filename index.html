@@ -64,6 +64,7 @@
     <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
     <h2 id="cp-title">Co-Pilot</h2>
     <div class="home-header-btns">
+      <button class="icon-btn hidden" id="cp-file" aria-label="Open The File">📁</button>
       <button class="icon-btn hidden" id="cp-clear" aria-label="Clear conversation">🧹</button>
       <button class="icon-btn hidden" id="cp-recal" aria-label="Redo the personality screening">🎛️</button>
     </div>
@@ -132,10 +133,55 @@
   <!-- the calibrated chat -->
   <div id="cp-chat" class="cp-phase hidden">
     <div id="chat-log" class="chat-log"></div>
+    <div class="noted-chip hidden" id="noted-chip">
+      <span>📝 <span id="noted-label">noted</span> — added to The File</span>
+      <button id="noted-undo">undo</button>
+    </div>
     <div class="handoff-input-row chat-row">
       <input type="text" id="chat-input" class="big-input" placeholder="talk to me…" autocomplete="off">
       <button class="mic-btn" id="chat-mic" aria-label="Speak your message">🎤</button>
       <button class="mic-btn send" id="chat-send" aria-label="Send">➤</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ THE FILE: THE CO-PILOT'S SCRUTABLE DOSSIER ============ -->
+<section id="screen-file" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="copilot" aria-label="Back to the co-pilot">←</button>
+    <h2>📁 The File</h2>
+    <span class="header-spacer"></span>
+  </header>
+  <p class="dim vault-hint">Everything the co-pilot knows about you lives here, on this phone. Read it, correct it, delete it — your edits win.</p>
+
+  <div class="file-sections">
+    <div class="file-sec">
+      <p class="settings-h">Self-portrait <span class="dim">(your words — the AI never writes here)</span></p>
+      <textarea id="file-portrait" class="dump-textarea" rows="3" maxlength="600" placeholder="Who are you, in your own words? This is read before every reply."></textarea>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Matrix</p>
+      <div class="file-card" id="file-matrix"></div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Rhythm <span class="dim">(from when you use the app — red = spiral-prone hours)</span></p>
+      <div class="file-card">
+        <div class="rh-bars" id="file-rhythm-bars"></div>
+        <p class="dim" id="file-rhythm-line"></p>
+      </div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Vault</p>
+      <div class="file-card"><p class="dim" id="file-vault-line"></p></div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Field notes <span class="dim" id="file-notes-count"></span></p>
+      <div class="chip-grid left" id="file-filter"></div>
+      <div id="file-notes" class="file-notes"></div>
     </div>
   </div>
 </section>
@@ -321,6 +367,7 @@
       <select id="set-model"></select>
     </label>
     <button class="pill-btn alt" id="set-recal">🎛️ Run the personality screening</button>
+    <button class="pill-btn alt" id="set-file">📁 Open The File</button>
 
     <button class="pill-btn alt danger" id="set-wipe">Wipe all my data</button>
     <p class="dim about">Over-Ride keeps everything on this device — your vault, your matrix, your key.

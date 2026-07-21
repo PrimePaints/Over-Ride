@@ -2,7 +2,7 @@
 // but users must still receive updates: stale-while-revalidate serves the
 // cached copy instantly and refreshes it in the background for next time.
 
-const CACHE = 'override-v3';
+const CACHE = 'override-v4';
 const ASSETS = [
   '.',
   'index.html',
@@ -22,6 +22,8 @@ const ASSETS = [
   'js/ai.js',
   'js/mind.js',
   'js/copilot.js',
+  'js/notes.js',
+  'js/file.js',
   'manifest.webmanifest',
   'icons/icon.svg',
   'icons/icon-192.png',

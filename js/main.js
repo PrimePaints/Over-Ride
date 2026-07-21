@@ -12,10 +12,11 @@ import * as retrace from './retrace.js';
 import * as stepper from './stepper.js';
 import * as dump from './dump.js';
 import * as copilot from './copilot.js';
+import * as file from './file.js';
 import { renderCard } from './dump.js';
 
 // ---------- router ----------
-const flows = { defib, retrace, stepper, dump, copilot };
+const flows = { defib, retrace, stepper, dump, copilot, file };
 let current = 'home';
 
 function show(name) {
@@ -139,6 +140,7 @@ function bindSettings() {
     sessionStorage.setItem('override-recal', '1');
     router.go('copilot');
   });
+  $('#set-file').addEventListener('click', () => router.go('file'));
 
   // two-tap confirm — native confirm() dialogs are jarring and unstylable
   const wipe = $('#set-wipe');

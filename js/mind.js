@@ -4,7 +4,8 @@
 // person needs — and that matrix shapes every co-pilot reply from then on.
 
 import { completeJSON } from './ai.js';
-import { mind as mindStore, crumbs, vault, ago } from './store.js';
+import { mind as mindStore, crumbs, vault, portrait, ago } from './store.js';
+import { relevant, rhythmSummary, OBS_OPEN, OBS_CLOSE } from './notes.js';
 
 // ---------- The screening ----------
 // kind: 'single' → tap one chip (auto-advances), 'multi' → toggle chips,
@@ -127,7 +128,29 @@ Hard rules that override everything below:
 - Plain language. No lectures, no bullet-point essays, no "as an AI".
 - Never shame them or imply they're broken. The brain is the weather, not the person.`;
 
-export function chatSystem() {
+const OBS_PROTOCOL = `FIELD NOTES PROTOCOL (invisible to the user — the app strips it before display):
+After your reply, on a new line, append exactly: ${OBS_OPEN}[…]${OBS_CLOSE}
+The array holds 0-2 observation objects: {"text": one specific observation about the user, "kind": "pattern"|"trigger"|"state"|"win"|"value"|"fact", "importance": 1-10 (1 = mundane, 10 = core insight), "provenance": "stated" (they said it outright) or "inferred" (you deduced it), "keywords": [2-5 lowercase words]}
+Rules for what counts as a note:
+- Only what THIS exchange evidenced. Cite behavior or their words, not vibes.
+- Record events, never identities: "deferred the supplier email a 3rd time" — not "is an avoider".
+- Never record your own advice or claims as facts about them. Never record praise or agreement as a trait.
+- Watch especially for: triggers and what made a task aversive (ambiguity, boredom, being judged), avoidance moves and what relief they bought, spiral tells, intention-vs-action gaps, what actually helped, wins, stated values.
+- Most exchanges deserve zero or one note. Empty is normal: ${OBS_OPEN}[]${OBS_CLOSE}`;
+
+function vaultSummary() {
+  const items = vault.all();
+  const open = items.filter(i => !i.done);
+  if (!items.length) return null;
+  let s = `${open.length} open item${open.length === 1 ? '' : 's'}, ${items.length - open.length} done`;
+  if (open.length) {
+    const oldest = open.reduce((a, b) => (a.ts < b.ts ? a : b));
+    s += `; oldest open: “${oldest.title}” (${ago(oldest.ts)})`;
+  }
+  return s;
+}
+
+export function chatSystem(latestMsg = '') {
   const m = matrix();
   let sys = SAFETY_CORE;
 
@@ -137,11 +160,30 @@ export function chatSystem() {
       `\n\nNever:\n${m.dont.map(d => '- ' + d).join('\n')}`;
   }
 
-  const recent = crumbs.recent(4).map(c => `- ${c.text} (${ago(c.ts)})`).join('\n');
-  const open = vault.all().filter(i => !i.done).length;
-  sys += `\n\nLIVE CONTEXT (from the app, right now):\n- Local time: ${new Date().toLocaleString([], { weekday: 'long', hour: '2-digit', minute: '2-digit' })}` +
-    `\n${recent ? '- Recent app activity:\n' + recent : '- No recent app activity.'}` +
-    `\n- Open items in their vault: ${open}`;
+  const self = (portrait.get() || '').trim();
+  if (self) {
+    sys += `\n\nSELF-PORTRAIT (written by the user, in their own words — never contradict it, never rewrite it):\n${self.slice(0, 600)}`;
+  }
 
+  // The File: telemetry + the field notes most relevant to this message.
+  const parts = [];
+  const rhythmLine = rhythmSummary();
+  if (rhythmLine) parts.push(`- Rhythm: ${rhythmLine}`);
+  const vaultLine = vaultSummary();
+  if (vaultLine) parts.push(`- Vault: ${vaultLine}`);
+  const notes = relevant(latestMsg, 5);
+  if (notes.length) {
+    parts.push('- Field notes relevant right now:' + notes.map(n =>
+      `\n  · [${n.prov}${n.ev > 1 ? ` ×${n.ev}` : ''}, ${ago(n.ts)}] ${n.text}`).join(''));
+  }
+  if (parts.length) {
+    sys += `\n\nTHE FILE (your accumulated field intelligence — the user can read and edit all of it in The File screen; treat inferred notes as hypotheses to re-test, not facts):\n${parts.join('\n')}`;
+  }
+
+  const recent = crumbs.recent(4).map(c => `- ${c.text} (${ago(c.ts)})`).join('\n');
+  sys += `\n\nLIVE CONTEXT (right now):\n- Local time: ${new Date().toLocaleString([], { weekday: 'long', hour: '2-digit', minute: '2-digit' })}` +
+    `\n${recent ? '- Recent app activity:\n' + recent : '- No recent app activity.'}`;
+
+  sys += `\n\n${OBS_PROTOCOL}`;
   return sys;
 }

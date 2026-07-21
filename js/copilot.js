@@ -7,6 +7,7 @@ import { buzz } from './haptics.js';
 import { crumbs, chat, mind as mindStore } from './store.js';
 import { isConfigured, streamChat, AIError } from './ai.js';
 import { QUESTIONS, synthesize, saveMatrix, hasMatrix, matrix, chatSystem } from './mind.js';
+import { stripObs, parseObs, record, unrecord, harvestTelemetry } from './notes.js';
 
 let router = null;
 let phase = 'setup';
@@ -22,6 +23,7 @@ function show(id) {
   PHASES.forEach(x => $('#' + x).classList.toggle('hidden', x !== id));
   $('#cp-title').textContent = phase === 'chat' ? (matrix()?.codename || 'Co-Pilot') : TITLES[phase];
   const inChat = phase === 'chat';
+  $('#cp-file').classList.toggle('hidden', !inChat);
   $('#cp-clear').classList.toggle('hidden', !inChat);
   $('#cp-recal').classList.toggle('hidden', !inChat);
 }
@@ -149,6 +151,20 @@ function scrollDown() {
   box.scrollTop = box.scrollHeight;
 }
 
+// results of the most recent capture, for the "noted" chip's undo
+let lastNoted = [];
+
+function hideNotedChip() {
+  $('#noted-chip').classList.add('hidden');
+  lastNoted = [];
+}
+
+function showNotedChip(results) {
+  lastNoted = results;
+  $('#noted-label').textContent = results.length > 1 ? `noted ×${results.length}` : 'noted';
+  $('#noted-chip').classList.remove('hidden');
+}
+
 async function send(textArg) {
   const input = $('#chat-input');
   const text = (textArg ?? input.value).trim();
@@ -156,6 +172,7 @@ async function send(textArg) {
   input.value = '';
   hush();
   stopListening();
+  hideNotedChip();
 
   chat.push('user', text);
   $('#chat-log').appendChild(bubble('user', text));
@@ -173,17 +190,30 @@ async function send(textArg) {
   $('#chat-send').disabled = true;
   try {
     const reply = await streamChat({
-      system: chatSystem(),
+      system: chatSystem(text),
       messages,
       signal: streaming.signal,
       onDelta: (_chunk, full) => {
+        // stripObs holds back partial markers so the field-note block
+        // never flashes on screen mid-stream
+        const visible = stripObs(full);
+        if (!visible) return;
         aiEl.classList.remove('waiting');
-        aiEl.textContent = full;
+        aiEl.textContent = visible;
         scrollDown();
       },
     });
-    chat.push('assistant', reply);
-    say(reply);
+    const { clean, obs } = parseObs(reply);
+    const shown = clean || 'Noted.';
+    aiEl.classList.remove('waiting');
+    aiEl.textContent = shown;
+    chat.push('assistant', shown);
+    say(shown);
+    if (obs.length) {
+      const results = obs.map(record);
+      showNotedChip(results);
+    }
+    scrollDown();
   } catch (err) {
     if (err.name === 'AbortError') {
       aiEl.remove();
@@ -223,6 +253,11 @@ export function init(r) {
   $('#mx-redo').addEventListener('click', () => show('cp-intro'));
   $('#cp-recal').addEventListener('click', () => show('cp-intro'));
   $('#cp-clear').addEventListener('click', clearChat);
+  $('#cp-file').addEventListener('click', () => router.go('file'));
+  $('#noted-undo').addEventListener('click', () => {
+    unrecord(lastNoted);
+    hideNotedChip();
+  });
 
   $('#chat-send').addEventListener('click', () => send());
   $('#chat-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
@@ -238,7 +273,9 @@ export function init(r) {
 
 export function enter() {
   hush();
+  harvestTelemetry(); // fold fresh breadcrumbs into rhythm + field notes
   crumbs.log('opened the co-pilot');
+  hideNotedChip();
   const recal = sessionStorage.getItem('override-recal');
   sessionStorage.removeItem('override-recal');
   if (!isConfigured()) { show('cp-setup'); return; }
