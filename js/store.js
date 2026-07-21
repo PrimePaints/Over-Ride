@@ -1,0 +1,84 @@
+// store.js — everything stays on-device, in localStorage.
+
+const KEY = 'override-v1';
+
+const DEFAULTS = {
+  settings: { voice: true, haptics: true, noise: 'brown', volume: 60 },
+  vault: [],        // {id, ts, type, title, extra, done}
+  crumbs: [],       // {ts, text} — passive context breadcrumbs for the Retracer
+  streak: 0,        // lifetime micro-steps completed
+};
+
+let state = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return structuredClone(DEFAULTS);
+    const parsed = JSON.parse(raw);
+    return {
+      ...structuredClone(DEFAULTS),
+      ...parsed,
+      settings: { ...DEFAULTS.settings, ...(parsed.settings || {}) },
+    };
+  } catch {
+    return structuredClone(DEFAULTS);
+  }
+}
+
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* storage full/blocked — keep running in memory */ }
+}
+
+export const settings = {
+  get: (k) => state.settings[k],
+  set: (k, v) => { state.settings[k] = v; save(); },
+  all: () => ({ ...state.settings }),
+};
+
+export const vault = {
+  add(item) {
+    const entry = { id: Date.now() + Math.random().toString(16).slice(2), ts: Date.now(), done: false, ...item };
+    state.vault.unshift(entry);
+    save();
+    return entry;
+  },
+  all: () => [...state.vault],
+  toggle(id) {
+    const it = state.vault.find(i => i.id === id);
+    if (it) { it.done = !it.done; save(); }
+  },
+  clearDone() {
+    state.vault = state.vault.filter(i => !i.done);
+    save();
+  },
+};
+
+export const crumbs = {
+  log(text) {
+    state.crumbs.unshift({ ts: Date.now(), text });
+    state.crumbs = state.crumbs.slice(0, 30);
+    save();
+  },
+  recent: (n = 6) => state.crumbs.slice(0, n),
+};
+
+export const streak = {
+  bump() { state.streak++; save(); return state.streak; },
+  get: () => state.streak,
+};
+
+export function wipeAll() {
+  state = structuredClone(DEFAULTS);
+  try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+}
+
+export function ago(ts) {
+  const s = Math.round((Date.now() - ts) / 1000);
+  if (s < 60) return `${s}s ago`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}

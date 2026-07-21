@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b0b10">
+<meta name="description" content="Over-Ride — an intervention-first cognitive assistance app. For when you're at 10%, not 100%.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Over-Ride">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+<title>Over-Ride</title>
+</head>
+<body>
+
+<!-- ============ HOME: THE TRIAGE SCREEN ============ -->
+<section id="screen-home" class="screen active">
+  <header class="home-header">
+    <h1 class="logo">OVER<span>-</span>RIDE</h1>
+    <div class="home-header-btns">
+      <button class="icon-btn" id="btn-vault" aria-label="External brain vault">🧠</button>
+      <button class="icon-btn" id="btn-settings" aria-label="Settings">⚙︎</button>
+    </div>
+  </header>
+
+  <p class="home-hint">Tap what's happening. That's all you have to do.</p>
+
+  <div class="triage-grid">
+    <button class="triage-btn t-forgot" data-go="retrace">
+      <span class="t-emoji">🫥</span>
+      <span class="t-label">I Forgot</span>
+      <span class="t-sub">blank — what was I doing?</span>
+    </button>
+    <button class="triage-btn t-spiral" data-go="defib">
+      <span class="t-emoji">🌀</span>
+      <span class="t-label">I'm Spiraling</span>
+      <span class="t-sub">overwhelmed — make it stop</span>
+    </button>
+    <button class="triage-btn t-stuck" data-go="stepper">
+      <span class="t-emoji">🧊</span>
+      <span class="t-label">I'm Stuck</span>
+      <span class="t-sub">I know what to do, can't start</span>
+    </button>
+    <button class="triage-btn t-dump" data-go="dump">
+      <span class="t-emoji">🗣️</span>
+      <span class="t-label">Brain Dump</span>
+      <span class="t-sub">get it out of my head</span>
+    </button>
+  </div>
+</section>
+
+<!-- ============ DEFIBRILLATOR: I'M SPIRALING ============ -->
+<section id="screen-defib" class="screen dark">
+  <!-- Phase 1: sensory override / grounding -->
+  <div class="defib-phase" id="defib-ground">
+    <div class="pulse-ring" id="pulse-ring"><div class="pulse-core"></div></div>
+    <p class="ground-text" id="ground-text">Nothing is required of you right now.</p>
+    <p class="ground-subtext">Brown noise on. Feel the pulse. Just be here.</p>
+    <button class="ghost-btn small-exit" id="defib-skip">skip →</button>
+  </div>
+
+  <!-- Phase 2: spatial puzzle -->
+  <div class="defib-phase hidden" id="defib-game">
+    <div class="game-topbar">
+      <svg class="timer-ring" viewBox="0 0 36 36" aria-hidden="true">
+        <circle class="timer-bg" cx="18" cy="18" r="16"></circle>
+        <circle class="timer-fg" id="timer-fg" cx="18" cy="18" r="16"></circle>
+      </svg>
+      <p class="game-hint">Sort the colors. Tap a tube, then tap where to pour.</p>
+    </div>
+    <div class="tubes" id="tubes"></div>
+    <button class="ghost-btn small-exit" id="game-exit">I'm okay now</button>
+  </div>
+
+  <!-- Phase 3: AI hand-off -->
+  <div class="defib-phase hidden" id="defib-handoff">
+    <div class="copilot-avatar">◉</div>
+    <p class="copilot-line" id="handoff-line">Okay. The spiral is broken.<br>What were we trying to do right before this?</p>
+    <div class="handoff-input-row">
+      <input type="text" id="handoff-input" class="big-input" placeholder="type it, or use the mic…" autocomplete="off">
+      <button class="mic-btn" id="handoff-mic" aria-label="Speak your answer">🎤</button>
+    </div>
+    <div class="handoff-btns">
+      <button class="pill-btn" id="handoff-submit">That's it →</button>
+      <button class="pill-btn alt" id="handoff-dontknow">I don't remember</button>
+      <button class="pill-btn alt" id="handoff-cantstart">I know, but I can't start</button>
+      <button class="ghost-btn" id="handoff-more">Not ready — one more minute of the game</button>
+      <button class="ghost-btn" id="handoff-done">I'm okay. Take me home.</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RETRACER: I FORGOT ============ -->
+<section id="screen-retrace" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2>Retrace</h2>
+    <span class="header-spacer"></span>
+  </header>
+
+  <div id="retrace-flow">
+    <p class="copilot-line" id="retrace-q">Don't panic. It's in there. Let's retrace.</p>
+    <div class="chip-grid" id="retrace-answers"></div>
+    <div class="retrace-free hidden" id="retrace-free">
+      <input type="text" id="retrace-input" class="big-input" placeholder="say or type it…" autocomplete="off">
+      <button class="mic-btn" id="retrace-mic" aria-label="Speak your answer">🎤</button>
+      <button class="pill-btn" id="retrace-input-ok">OK</button>
+    </div>
+  </div>
+
+  <details class="clues" id="clues-panel">
+    <summary>🔎 Clues — what I know about your last few minutes</summary>
+    <ul id="clues-list"></ul>
+  </details>
+</section>
+
+<!-- ============ MICRO-STEPPER: I'M STUCK ============ -->
+<section id="screen-stepper" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2>Micro-Stepper</h2>
+    <span class="header-spacer"></span>
+  </header>
+
+  <!-- ask for the task -->
+  <div id="stepper-ask">
+    <p class="copilot-line">What's the thing you can't start?<br><span class="dim">Don't explain. Just name it.</span></p>
+    <div class="handoff-input-row">
+      <input type="text" id="stepper-input" class="big-input" placeholder="e.g. laundry, shower, that email…" autocomplete="off">
+      <button class="mic-btn" id="stepper-mic" aria-label="Speak the task">🎤</button>
+    </div>
+    <button class="pill-btn" id="stepper-start">Break it down for me →</button>
+    <div class="preset-row" id="stepper-presets"></div>
+  </div>
+
+  <!-- one step at a time -->
+  <div id="stepper-run" class="hidden">
+    <div class="momentum-bar"><div class="momentum-fill" id="momentum-fill"></div></div>
+    <p class="step-count" id="step-count">step 1</p>
+    <p class="the-step" id="the-step">Stand up.</p>
+    <p class="step-lock" id="step-lock">🔒 step 2 is locked until you do this one</p>
+    <button class="done-btn" id="step-done">DONE ✓</button>
+    <button class="ghost-btn" id="stepper-quit">stop here (that's allowed)</button>
+  </div>
+
+  <!-- celebration -->
+  <div id="stepper-win" class="hidden">
+    <p class="win-emoji">🏆</p>
+    <p class="copilot-line" id="win-line">You did the thing.</p>
+    <button class="pill-btn" id="stepper-again">Break down another task</button>
+    <button class="ghost-btn" data-go="home">Home</button>
+  </div>
+</section>
+
+<!-- ============ EXTERNAL BRAIN: BRAIN DUMP ============ -->
+<section id="screen-dump" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2>Brain Dump</h2>
+    <span class="header-spacer"></span>
+  </header>
+
+  <div id="dump-capture">
+    <p class="copilot-line">Say everything. Don't organize it.<br><span class="dim">"dog food, also email Sarah, also my knee hurts"</span></p>
+    <button class="big-mic" id="dump-mic" aria-label="Hold to speak">
+      <span id="dump-mic-icon">🎤</span>
+      <span id="dump-mic-label">tap to speak</span>
+    </button>
+    <textarea id="dump-text" class="dump-textarea" placeholder="…or just type it all here" rows="4"></textarea>
+    <button class="pill-btn" id="dump-sort">Sort it for me →</button>
+  </div>
+
+  <div id="dump-result" class="hidden">
+    <p class="copilot-line">Got it. It's out of your head now.</p>
+    <div id="dump-cards" class="dump-cards"></div>
+    <button class="done-btn" id="dump-return">↩ RETURN TO WHAT YOU WERE DOING</button>
+    <button class="ghost-btn" id="dump-more">dump more</button>
+  </div>
+</section>
+
+<!-- ============ VAULT: THE EXTERNAL BRAIN'S CONTENTS ============ -->
+<section id="screen-vault" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2>🧠 Vault</h2>
+    <button class="icon-btn" id="vault-clear" aria-label="Clear completed">🧹</button>
+  </header>
+  <p class="dim vault-hint">Everything you've dumped, sorted. Tap to mark done.</p>
+  <div id="vault-list" class="dump-cards"></div>
+</section>
+
+<!-- ============ SETTINGS ============ -->
+<section id="screen-settings" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2>Settings</h2>
+    <span class="header-spacer"></span>
+  </header>
+  <div class="settings-list">
+    <label class="setting-row">
+      <span>Co-pilot voice (speaks out loud)</span>
+      <input type="checkbox" id="set-voice" checked>
+    </label>
+    <label class="setting-row">
+      <span>Haptic heartbeat &amp; buzzes</span>
+      <input type="checkbox" id="set-haptics" checked>
+    </label>
+    <label class="setting-row">
+      <span>Noise type</span>
+      <select id="set-noise">
+        <option value="brown" selected>Brown (deep rumble)</option>
+        <option value="pink">Pink (softer hiss)</option>
+        <option value="rain">Rain-ish (filtered)</option>
+      </select>
+    </label>
+    <label class="setting-row">
+      <span>Noise volume</span>
+      <input type="range" id="set-volume" min="0" max="100" value="60">
+    </label>
+    <button class="pill-btn alt danger" id="set-wipe">Wipe all my data</button>
+    <p class="dim about">Over-Ride keeps everything on this device. Nothing is uploaded, ever.
+    The "AI" co-pilot is a local rule engine: private, offline, instant.</p>
+  </div>
+</section>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
