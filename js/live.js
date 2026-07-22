@@ -8,10 +8,11 @@ import { ai as aiStore } from './store.js';
 const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent';
 
 // Tried in order until one accepts the setup — Live model names move fast.
+// Google retired the whole 2.5-Live generation (gemini-live-2.5-flash*,
+// gemini-2.0-flash-live-001 shut down 2025-12-09); the current line is 3.1.
 const MODEL_CANDIDATES = [
-  'gemini-live-2.5-flash',
-  'gemini-live-2.5-flash-preview',
-  'gemini-2.5-flash-preview-native-audio-dialog',
+  'gemini-3.1-flash-live-preview',              // recommended for all Live use
+  'gemini-2.5-flash-native-audio-preview-12-2025', // deprecated but still serving
 ];
 
 const IN_RATE = 16000;
@@ -39,16 +40,18 @@ function bytesFromB64(b64) {
 //   onAIText(t, done)     running transcript of what the co-pilot said
 //   onSpeaking(bool)      AI audio currently playing (drives the orb)
 export class LiveSession {
-  constructor({ system, onState, onUserText, onAIText, onSpeaking }) {
+  constructor({ system, onState, onUserText, onAIText, onSpeaking, onAttempt }) {
     this.system = system;
     this.onState = onState || (() => {});
     this.onUserText = onUserText || (() => {});
     this.onAIText = onAIText || (() => {});
     this.onSpeaking = onSpeaking || (() => {});
+    this.onAttempt = onAttempt || (() => {}); // diagnostics: one call per failed connect
     this.ws = null;
     this.ready = false;
     this.closedByUs = false;
     this.candidate = 0;
+    this.attempts = []; // {model, code, reason}
     this.micStream = null;
     this.ctxIn = null;
     this.ctxOut = null;
@@ -73,7 +76,9 @@ export class LiveSession {
   connect() {
     const model = MODEL_CANDIDATES[this.candidate];
     if (!model) {
-      this.onState("error:Couldn't reach a Gemini Live model with this key. Check the key at aistudio.google.com and try again.");
+      // every candidate failed — echo Google's own words, they name the real problem
+      const hint = this.attempts.find(a => a.reason)?.reason || 'no reason given by Google';
+      this.onState(`error:Google refused every Live model. Its own error: “${hint}”`);
       this.teardownAudio();
       return;
     }
@@ -107,7 +112,10 @@ export class LiveSession {
     this.ws.addEventListener('close', (ev) => {
       if (this.closedByUs) return;
       if (!this.ready) {
-        // setup rejected (bad model name, key restrictions…) — try the next
+        // setup rejected (bad model name, key restrictions…) — log & try the next
+        const attempt = { model, code: ev.code, reason: (ev.reason || '').slice(0, 300) };
+        this.attempts.push(attempt);
+        this.onAttempt(attempt);
         this.candidate++;
         this.connect();
         return;

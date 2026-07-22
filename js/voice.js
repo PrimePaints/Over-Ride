@@ -43,13 +43,23 @@ function connect() {
   muted = false;
   $('#voice-mute').classList.remove('muted');
 
+  $('#voice-log').innerHTML = '';
+  $('#voice-log-wrap').classList.add('hidden');
   session = new LiveSession({
     system: chatSystem('', { voice: true }),
     onState: (s) => {
       if (s === 'connecting') setStatus('connecting…');
       else if (s === 'live') { setStatus('live — just talk'); buzz([20, 30, 20]); }
       else if (s === 'closed') setStatus('call ended');
-      else if (s.startsWith('error:')) setStatus(s.slice(6), 'err');
+      else if (s.startsWith('error:')) {
+        setStatus(s.slice(6), 'err');
+        if ($('#voice-log').children.length) $('#voice-log-wrap').classList.remove('hidden');
+      }
+    },
+    onAttempt: ({ model, code, reason }) => {
+      const li = document.createElement('li');
+      li.textContent = `${model} → ${code}${reason ? ' · ' + reason : ''}`;
+      $('#voice-log').appendChild(li);
     },
     onUserText: (t, done) => {
       caption('me', t, done);

@@ -42,30 +42,49 @@ export async function connect(slot) {
   const prev = store.get().accounts[slot];
 
   return new Promise((resolve, reject) => {
-    const tc = window.google.accounts.oauth2.initTokenClient({
-      client_id: clientId,
-      scope: SCOPES,
-      hint: prev?.email || undefined,
-      prompt: prev ? '' : 'select_account',
-      callback: async (resp) => {
-        if (!resp || resp.error) {
-          reject(new Error(resp?.error === 'access_denied' ? 'Sign-in was cancelled.' : `Google sign-in failed (${resp?.error || 'no response'}).`));
-          return;
-        }
-        const token = resp.access_token;
-        const exp = Date.now() + (Number(resp.expires_in || 3600) - 60) * 1000;
-        let email = prev?.email || '';
-        try {
-          const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-            headers: { Authorization: 'Bearer ' + token },
-          });
-          if (u.ok) email = (await u.json()).email || email;
-        } catch { /* keep previous label */ }
-        store.setAccount(slot, { email, token, exp });
-        try { await refreshEvents({ force: true }); } catch { /* agenda fills in later */ }
-        resolve(email);
-      },
-    });
+    let tc;
+    try {
+      tc = window.google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: SCOPES,
+        hint: prev?.email || undefined,
+        prompt: prev ? '' : 'select_account',
+        callback: async (resp) => {
+          if (!resp || resp.error) {
+            const why = resp?.error === 'access_denied'
+              ? 'Sign-in was cancelled (or this Google account is not on the OAuth consent screen\'s test-user list).'
+              : `Google sign-in failed: ${resp?.error_description || resp?.error || 'no response'}`;
+            reject(new Error(why));
+            return;
+          }
+          const token = resp.access_token;
+          const exp = Date.now() + (Number(resp.expires_in || 3600) - 60) * 1000;
+          let email = prev?.email || '';
+          try {
+            const u = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+              headers: { Authorization: 'Bearer ' + token },
+            });
+            if (u.ok) email = (await u.json()).email || email;
+          } catch { /* keep previous label */ }
+          store.setAccount(slot, { email, token, exp, err: '' });
+          try { await refreshEvents({ force: true }); } catch { /* surfaced via status() */ }
+          const err = store.get().accounts[slot]?.err;
+          if (err) reject(new Error(`Signed in as ${email}, but: ${err}`));
+          else resolve(email);
+        },
+        error_callback: (err) => {
+          // popup-level failures never reach callback() — catch them here
+          const map = {
+            popup_failed_to_open: 'The sign-in popup was blocked — allow popups for this site and retry.',
+            popup_closed: 'The sign-in window was closed before finishing.',
+          };
+          reject(new Error(map[err?.type] || `Google sign-in error: ${err?.type || 'unknown'}. If the popup showed "origin is not allowed", the OAuth client is missing https://primepaints.github.io under Authorized JavaScript origins (changes take ~5min to propagate).`));
+        },
+      });
+    } catch (e) {
+      reject(new Error(`Google sign-in could not start: ${e.message}`));
+      return;
+    }
     tc.requestAccessToken();
   });
 }
@@ -94,11 +113,22 @@ export async function refreshEvents({ force = false } = {}) {
         `https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=15&singleEvents=true&orderBy=startTime&timeMin=${timeMin}&timeMax=${timeMax}`,
         { headers: { Authorization: 'Bearer ' + acc.token } },
       );
-      if (res.status === 401 || res.status === 403) {
-        store.setAccount(slot, { ...acc, exp: 0 }); // surface as "reconnect"
+      if (!res.ok) {
+        // classify Google's error into something the user can actually act on
+        let detail = '';
+        try { detail = (await res.json())?.error?.message || ''; } catch { /* no body */ }
+        if (/has not been used|is disabled|accessNotConfigured|SERVICE_DISABLED/i.test(detail)) {
+          store.setAccount(slot, { ...acc, err: 'the Google Calendar API is not enabled in the Cloud project that owns your Client ID — enable it (APIs & Services → Library) and reconnect.' });
+        } else if (res.status === 401) {
+          store.setAccount(slot, { ...acc, exp: 0, err: '' }); // routine expiry → reconnect
+        } else if (res.status === 403 && /insufficient/i.test(detail)) {
+          store.setAccount(slot, { ...acc, exp: 0, err: 'the calendar permission was not granted at sign-in — reconnect and tick the calendar checkbox on Google\'s consent screen.' });
+        } else {
+          store.setAccount(slot, { ...acc, err: `Google error ${res.status}: ${detail.slice(0, 140) || 'no detail'}` });
+        }
         continue;
       }
-      if (!res.ok) continue;
+      if (acc.err) store.setAccount(slot, { ...store.get().accounts[slot], err: '' });
       const data = await res.json();
       (data.items || []).forEach((e) => {
         if (e.status === 'cancelled') return;
@@ -128,6 +158,7 @@ export function status() {
   SLOTS.forEach((slot) => {
     const acc = g.accounts[slot];
     if (!acc) out[slot] = { state: 'off' };
+    else if (acc.err) out[slot] = { state: 'error', email: acc.email, err: acc.err };
     else if (acc.exp < Date.now()) out[slot] = { state: 'expired', email: acc.email };
     else out[slot] = { state: 'ok', email: acc.email };
   });

@@ -159,6 +159,7 @@ function bindSettings() {
     const label = (slot) => {
       const s = st[slot];
       if (s.state === 'ok') return `${slot}: ${s.email} ✓`;
+      if (s.state === 'error') return `${slot}: ${s.email} — ⚠ ${s.err}`;
       if (s.state === 'expired') return `${slot}: ${s.email} — reconnect`;
       return `${slot}: not connected`;
     };

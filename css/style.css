@@ -561,6 +561,10 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 @keyframes votalk { 0%,100% { transform: scale(1); } 50% { transform: scale(1.16); } }
 .voice-status { color: var(--dim); font-size: .95rem; text-align: center; min-height: 1.3em; }
 .voice-status.err { color: var(--spiral); padding: 0 16px; line-height: 1.45; }
+.voice-log-wrap { max-width: 100%; padding: 0 14px; }
+.voice-log-wrap summary { color: var(--dim); font-size: .8rem; cursor: pointer; text-align: center; }
+.voice-log-wrap ul { list-style: none; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.voice-log-wrap li { font-size: .74rem; color: var(--dim); line-height: 1.4; word-break: break-word; font-family: ui-monospace, Menlo, monospace; }
 .voice-caps {
   max-height: 32dvh; overflow-y: auto;
   display: flex; flex-direction: column; gap: 8px;
