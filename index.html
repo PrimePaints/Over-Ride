@@ -245,7 +245,7 @@
         <circle class="timer-bg" cx="18" cy="18" r="16"></circle>
         <circle class="timer-fg" id="timer-fg" cx="18" cy="18" r="16"></circle>
       </svg>
-      <p class="game-hint">Sort the colors. Tap a tube, then tap where to pour.</p>
+      <p class="game-hint">Tap a tube, tap where to pour. Same colour onto same colour — empties take anything.</p>
     </div>
     <div class="tubes" id="tubes"></div>
     <button class="ghost-btn small-exit" id="game-exit">I'm okay now</button>
@@ -395,6 +395,10 @@
     <label class="setting-row">
       <span>Noise volume</span>
       <input type="range" id="set-volume" min="0" max="100" value="60">
+    </label>
+    <label class="setting-row">
+      <span>Hands-free Brain Dump <span class="dim">(speak → auto-file → listen again)</span></span>
+      <input type="checkbox" id="set-dumpauto">
     </label>
     <p class="settings-h">AI co-pilot</p>
     <label class="setting-row column">

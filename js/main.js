@@ -123,6 +123,10 @@ function bindSettings() {
   noise.addEventListener('change', () => settings.set('noise', noise.value));
   volume.addEventListener('change', () => settings.set('volume', parseInt(volume.value, 10)));
 
+  const dumpAuto = $('#set-dumpauto');
+  dumpAuto.checked = settings.get('dumpAuto');
+  dumpAuto.addEventListener('change', () => settings.set('dumpAuto', dumpAuto.checked));
+
   // AI co-pilot
   const apiKey = $('#set-apikey');
   const model = $('#set-model');

@@ -3,7 +3,7 @@
 const KEY = 'override-v1';
 
 const DEFAULTS = {
-  settings: { voice: true, haptics: true, noise: 'brown', volume: 60 },
+  settings: { voice: true, haptics: true, noise: 'brown', volume: 60, dumpAuto: false, gameHelpSeen: false },
   ai: { apiKey: '', model: 'claude-opus-4-8' },
   mind: null,       // {answers, matrix, ts} — the co-pilot's personality matrix
   chat: [],         // {role, text, ts} — co-pilot conversation, capped at 40
@@ -15,6 +15,7 @@ const DEFAULTS = {
   sleepMeter: { impSum: 0, sessions: 0 },  // accumulates toward the next sleep cycle
   reads: [],       // {id, ts, claim, confidence, evidence, test, status, seen, resolvedTs}
   predictions: [], // {id, ts, claim, due, evidence, status, resolvedTs}
+  urges: { log: [], hourly: new Array(24).fill(0), ridden: 0 }, // Stop Urge history
   vault: [],        // {id, ts, type, title, extra, done}
   crumbs: [],       // {ts, text} — passive context breadcrumbs for the Retracer
   streak: 0,        // lifetime micro-steps completed
@@ -39,6 +40,11 @@ function load() {
       },
       dossier: { ...structuredClone(DEFAULTS.dossier), ...(parsed.dossier || {}) },
       sleepMeter: { ...DEFAULTS.sleepMeter, ...(parsed.sleepMeter || {}) },
+      urges: {
+        log: Array.isArray(parsed.urges?.log) ? parsed.urges.log : [],
+        hourly: Array.isArray(parsed.urges?.hourly) && parsed.urges.hourly.length === 24 ? parsed.urges.hourly : new Array(24).fill(0),
+        ridden: Number(parsed.urges?.ridden) || 0,
+      },
     };
   } catch {
     return structuredClone(DEFAULTS);
@@ -156,6 +162,18 @@ export const predictions = {
     if (x) { Object.assign(x, patch); save(); }
   },
   replaceAll(list) { state.predictions = list; save(); },
+};
+
+export const urges = {
+  get: () => state.urges,
+  logWave(entry) {
+    state.urges.log.push({ ts: Date.now(), ...entry });
+    state.urges.log = state.urges.log.slice(-200);
+    const h = new Date().getHours();
+    state.urges.hourly[h]++;
+    if (entry.rode) state.urges.ridden++;
+    save();
+  },
 };
 
 export const crumbs = {

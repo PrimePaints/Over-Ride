@@ -7,8 +7,8 @@ import { startNoise, stopNoise, duckNoise, chime, pourSound, winSound, unlockAud
 import { startHeartbeat, stopHeartbeat, buzz } from './haptics.js';
 import { say, hush, stopListening } from './speech.js';
 import { GROUND_LINES, HANDOFF_LINES, pick } from './brain.js';
-import { crumbs } from './store.js';
-import { WaterSort } from './game.js';
+import { crumbs, settings } from './store.js';
+import { WaterSort, gameHelp } from './game.js';
 
 const GROUND_SECONDS = 10;
 const GAME_SECONDS = 60;
@@ -39,7 +39,18 @@ function startGamePhase(seconds = GAME_SECONDS) {
   }
   game.newPuzzle();
 
-  // countdown ring
+  // first time here: explain the game before the clock starts
+  if (!settings.get('gameHelpSeen')) {
+    gameHelp($('#defib-game'), () => {
+      settings.set('gameHelpSeen', true);
+      startCountdown(seconds);
+    });
+  } else {
+    startCountdown(seconds);
+  }
+}
+
+function startCountdown(seconds) {
   const fg = $('#timer-fg');
   const t0 = performance.now();
   cancelAnimationFrame(ringRaf);

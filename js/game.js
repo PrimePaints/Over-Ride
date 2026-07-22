@@ -4,6 +4,41 @@
 const PALETTE = ['#ff5f6d', '#38d0f2', '#ffd23f', '#7cf29b', '#c17ef5', '#ff9f43', '#4b7bec'];
 const CAP = 4;
 
+// One-time "how to play" overlay, injected over the game container.
+// The caller owns the seen-flag; onDone fires when dismissed.
+export function gameHelp(container, onDone) {
+  const ov = document.createElement('div');
+  ov.className = 'game-help';
+
+  const h = document.createElement('p');
+  h.className = 'gh-title';
+  h.textContent = '🧪 How the tubes work';
+
+  const ul = document.createElement('ul');
+  [
+    'Tap a tube to lift it, then tap another tube to pour.',
+    'A colour only pours onto the SAME colour — or into an empty tube.',
+    'Only the top blob pours. Tubes hold 4.',
+    'Goal: every colour in its own tube.',
+  ].forEach((t) => {
+    const li = document.createElement('li');
+    li.textContent = t;
+    ul.appendChild(li);
+  });
+
+  const btn = document.createElement('button');
+  btn.className = 'pill-btn';
+  btn.textContent = 'Got it →';
+  btn.addEventListener('click', () => {
+    ov.remove();
+    onDone && onDone();
+  });
+
+  ov.append(h, ul, btn);
+  container.appendChild(ov);
+  btn.focus();
+}
+
 export class WaterSort {
   constructor(el, { onPour, onWin } = {}) {
     this.el = el;

@@ -6,11 +6,13 @@ import { say, hush, listen, stopListening, sttSupported } from './speech.js';
 import { chime, unlockAudio } from './audio.js';
 import { buzz } from './haptics.js';
 import { parseDump, typeMeta } from './brain.js';
-import { crumbs, vault } from './store.js';
+import { crumbs, vault, settings } from './store.js';
 
 let router = null;
 let micCtl = null;
 let autoMicTimer = null;
+let loopTimer = null;
+let onScreen = false;
 
 function show(id) {
   ['dump-capture', 'dump-result'].forEach(x =>
@@ -33,16 +35,39 @@ function toggleMic() {
     return;
   }
   if (micCtl) { micCtl.stop(); return; }
+  const handsFree = settings.get('dumpAuto');
   setMicState(true);
   micCtl = listen({
-    continuous: true,
+    // hands-free: end after each utterance so it files fast and re-arms;
+    // manual: keep listening until tapped off
+    continuous: !handsFree,
     onText: (text) => {
       const ta = $('#dump-text');
       ta.value = (ta.value ? ta.value.trim() + ', ' : '') + text;
     },
-    onEnd: () => { micCtl = null; setMicState(false); },
+    onEnd: (err) => {
+      micCtl = null;
+      setMicState(false);
+      if (handsFree && onScreen && err !== 'preempted') handsFreeStep();
+    },
   });
   if (!micCtl) setMicState(false);
+}
+
+// Hands-free loop: utterance captured → file it → flash the result →
+// back to capture with the mic re-armed for the next thought. A silent
+// listen (nothing captured) ends the loop.
+function handsFreeStep() {
+  const raw = $('#dump-text').value.trim();
+  if (!raw) return; // silence — loop ends, stay on capture
+  sortIt({ quiet: true });
+  clearTimeout(loopTimer);
+  loopTimer = setTimeout(() => {
+    if (!onScreen) return;
+    $('#dump-text').value = '';
+    show('dump-capture');
+    toggleMic();
+  }, 1600);
 }
 
 export function renderCard(item, { interactive = false } = {}) {
@@ -85,7 +110,7 @@ export function renderCard(item, { interactive = false } = {}) {
   return card;
 }
 
-function sortIt() {
+function sortIt({ quiet = false } = {}) {
   if (micCtl) micCtl.stop();
   const raw = $('#dump-text').value.trim();
   if (!raw) { $('#dump-text').focus(); return; }
@@ -104,13 +129,14 @@ function sortIt() {
   chime();
   buzz([20, 40, 20]);
   show('dump-result');
-  say(`Got it. ${items.length} ${items.length === 1 ? 'thing' : 'things'}, filed. Out of your head. Go back to what you were doing.`);
+  // hands-free mode stays silent: TTS here would talk over the re-armed mic
+  if (!quiet) say(`Got it. ${items.length} ${items.length === 1 ? 'thing' : 'things'}, filed. Out of your head. Go back to what you were doing.`);
 }
 
 export function init(r) {
   router = r;
   $('#dump-mic').addEventListener('click', toggleMic);
-  $('#dump-sort').addEventListener('click', sortIt);
+  $('#dump-sort').addEventListener('click', () => sortIt());
   $('#dump-return').addEventListener('click', () => router.go('home'));
   $('#dump-more').addEventListener('click', () => {
     $('#dump-text').value = '';
@@ -119,25 +145,23 @@ export function init(r) {
 }
 
 export function enter() {
+  onScreen = true;
   $('#dump-text').value = '';
   show('dump-capture');
   setMicState(false);
   crumbs.log('hit “Brain Dump”');
-  // zero-friction: auto-listen — but ONLY if the mic permission is already
-  // granted. Never fire a native permission dialog at someone mid-crisis.
+  // zero-friction: fire the mic immediately. Android Chrome often grants the
+  // mic one-time-only (permission resets to "ask" every session), so gating on
+  // a pre-granted state silently never triggered — worst case now is the
+  // browser's own prompt, which is exactly what a voice feature should do.
   clearTimeout(autoMicTimer);
-  if (sttSupported && navigator.permissions && navigator.permissions.query) {
-    navigator.permissions.query({ name: 'microphone' }).then(p => {
-      if (p.state === 'granted' && document.querySelector('#screen-dump.active')) {
-        clearTimeout(autoMicTimer);
-        autoMicTimer = setTimeout(toggleMic, 200);
-      }
-    }).catch(() => { /* permission API quirks — wait for an explicit tap */ });
-  }
+  if (sttSupported) autoMicTimer = setTimeout(toggleMic, 250);
 }
 
 export function exit() {
+  onScreen = false;
   clearTimeout(autoMicTimer);
+  clearTimeout(loopTimer);
   if (micCtl) micCtl.stop(); // fires onEnd synchronously → resets micCtl + UI
   micCtl = null;
   setMicState(false);
