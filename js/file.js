@@ -4,7 +4,7 @@
 
 import { $ } from './ui.js';
 import { notes as noteStore, portrait, rhythm, vault, mind as mindStore, dossier, ago } from './store.js';
-import { rhythmSummary } from './notes.js';
+import { rhythmSummary, urgeSummary } from './notes.js';
 import { runSleep, sleepStatus } from './sleep.js';
 import { openReads, openPredictions, calibration, receipts, resolveRead, resolvePrediction, expireStale } from './reads.js';
 import { AIError } from './ai.js';
@@ -301,6 +301,10 @@ function renderRhythm() {
   $('#file-rhythm-line').textContent = rhythmSummary() || 'Not enough activity yet — the rhythm builds itself as you use the app.';
 }
 
+function renderUrgesLine() {
+  $('#file-urges-line').textContent = urgeSummary() || 'None logged yet — the 🌊 Stop Urge button feeds this.';
+}
+
 function renderVaultLine() {
   const items = vault.all();
   const open = items.filter(i => !i.done);
@@ -400,6 +404,7 @@ export function enter() {
   renderMentalist();
   renderMatrixCard();
   renderRhythm();
+  renderUrgesLine();
   renderVaultLine();
   renderFilters();
   renderNotes();

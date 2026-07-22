@@ -5,7 +5,7 @@
 
 import { completeJSON } from './ai.js';
 import { mind as mindStore, crumbs, vault, portrait, dossier, ago } from './store.js';
-import { relevant, rhythmSummary, OBS_OPEN, OBS_CLOSE } from './notes.js';
+import { relevant, rhythmSummary, urgeSummary, OBS_OPEN, OBS_CLOSE } from './notes.js';
 import { openReads, openPredictions, calibration, recentSpiral } from './reads.js';
 
 // ---------- The screening ----------
@@ -185,6 +185,8 @@ export function chatSystem(latestMsg = '') {
   const parts = [];
   const rhythmLine = rhythmSummary();
   if (rhythmLine) parts.push(`- Rhythm: ${rhythmLine}`);
+  const urgeLine = urgeSummary();
+  if (urgeLine) parts.push(`- Urge waves: ${urgeLine}`);
   const vaultLine = vaultSummary();
   if (vaultLine) parts.push(`- Vault: ${vaultLine}`);
   const notes = relevant(latestMsg, 5);

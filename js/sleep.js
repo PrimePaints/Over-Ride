@@ -4,7 +4,7 @@
 // generalization required to cite its evidence, enforced client-side.
 
 import { completeJSON } from './ai.js';
-import { notes as noteStore, dossier, sleepMeter } from './store.js';
+import { notes as noteStore, dossier, sleepMeter, urges } from './store.js';
 import { record, decayScore } from './notes.js';
 import { addReads, addPredictions, openReads, openPredictions, calibration } from './reads.js';
 
@@ -154,6 +154,13 @@ function buildInput(sendNotes, aliasOf) {
   const cal = calibration();
   if (cal.resolved || cal.confirmed || cal.denied) {
     cur += `track record so far: predictions ${cal.hits}/${cal.resolved} right; reads ${cal.confirmed} confirmed, ${cal.denied} denied by the user\n`;
+  }
+  const uw = urges.get().log.slice(-15);
+  if (uw.length) {
+    cur += 'recent urge waves (time · intensity before→after · trigger · outcome):\n' + uw.map((e) => {
+      const t = new Date(e.ts);
+      return `- ${t.toLocaleDateString([], { weekday: 'short' })} ${String(t.getHours()).padStart(2, '0')}:00 · ${e.before ?? '?'}→${e.after ?? '?'} · ${e.trigger || '?'} · ${e.rode ? 'ridden' : 'stepped away'}`;
+    }).join('\n') + '\n';
   }
   return `${cur}\nACTIVE FIELD NOTES:\n${lines.join('\n')}`;
 }

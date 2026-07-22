@@ -30,6 +30,11 @@
   <p class="home-hint">Tap what's happening. That's all you have to do.</p>
 
   <div class="triage-grid">
+    <button class="triage-btn t-urge" data-go="urge">
+      <span class="t-emoji">🌊</span>
+      <span class="t-label">Stop Urge</span>
+      <span class="t-sub">drink, smoke, scroll — ride the wave instead</span>
+    </button>
     <button class="triage-btn t-forgot" data-go="retrace">
       <span class="t-emoji">🫥</span>
       <span class="t-label">I Forgot</span>
@@ -55,6 +60,71 @@
       <span class="t-label">Talk To Me</span>
       <span class="t-sub" id="copilot-sub">an AI co-pilot, tuned to your brain</span>
     </button>
+  </div>
+</section>
+
+<!-- ============ STOP URGE: RIDE THE WAVE ============ -->
+<section id="screen-urge" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
+    <h2>🌊 Stop Urge</h2>
+    <span class="header-spacer"></span>
+  </header>
+
+  <!-- rate the wave -->
+  <div id="urge-in" class="urge-phase centered">
+    <p class="copilot-line">Good. You picked up the phone instead.<br><span class="dim">that's the whole trick — now we ride it out</span></p>
+    <p class="urge-q">How big is the wave right now?</p>
+    <div class="chip-grid" id="urge-scale-in"></div>
+    <p class="dim cp-note">Urges peak and pass in minutes. Every single one. We just have to outlast this one.</p>
+  </div>
+
+  <!-- cyclic sighing -->
+  <div id="urge-breath" class="urge-phase centered hidden">
+    <div class="breath-circle" id="breath-circle"></div>
+    <p class="breath-text" id="breath-text" role="status">breathe in through your nose…</p>
+    <p class="dim">one minute of this turns the body's alarm down</p>
+    <button class="ghost-btn" id="breath-skip">skip →</button>
+  </div>
+
+  <!-- visuospatial load -->
+  <div id="urge-game" class="urge-phase hidden">
+    <div class="game-topbar">
+      <svg class="timer-ring" viewBox="0 0 36 36" aria-hidden="true">
+        <circle class="timer-bg" cx="18" cy="18" r="16"></circle>
+        <circle class="timer-fg" id="urge-fg" cx="18" cy="18" r="16"></circle>
+      </svg>
+      <p class="game-hint">Cravings and this puzzle use the same part of your head. Starve the wave — sort the tubes.</p>
+    </div>
+    <div class="tubes" id="urge-tubes"></div>
+    <button class="ghost-btn small-exit" id="urge-game-done">I'm steady →</button>
+  </div>
+
+  <!-- re-rate -->
+  <div id="urge-check" class="urge-phase centered hidden">
+    <p class="copilot-line">Check again.<br><span class="dim">where's the wave now?</span></p>
+    <div class="chip-grid" id="urge-scale-out"></div>
+  </div>
+
+  <!-- still cresting -->
+  <div id="urge-crest" class="urge-phase centered hidden">
+    <p class="copilot-line">Still cresting. That's allowed.</p>
+    <p class="dim cp-note">Waves take minutes, not seconds — and it's already falling even when it doesn't feel like it.
+    Play the tape forward: an hour after giving in — how does that actually feel?
+    Now an hour after riding it out. You're already riding.</p>
+    <button class="pill-btn" id="crest-more">Two more minutes of tubes</button>
+    <button class="pill-btn alt" id="crest-copilot">Talk it through</button>
+    <button class="ghost-btn" id="crest-done">the wave broke — I'm okay</button>
+  </div>
+
+  <!-- ridden -->
+  <div id="urge-win" class="urge-phase centered hidden">
+    <p class="win-emoji">🌊</p>
+    <p class="copilot-line" id="urge-win-line">Wave ridden.</p>
+    <p class="urge-q">What set it off? <span class="dim">(helps the map — skip if unsure)</span></p>
+    <div class="chip-grid" id="urge-triggers"></div>
+    <button class="pill-btn" data-go="home">Back to life →</button>
+    <button class="ghost-btn" id="urge-talk">tell the co-pilot about it</button>
   </div>
 </section>
 
@@ -210,6 +280,11 @@
         <div class="rh-bars" id="file-rhythm-bars"></div>
         <p class="dim" id="file-rhythm-line"></p>
       </div>
+    </div>
+
+    <div class="file-sec">
+      <p class="settings-h">Urge waves</p>
+      <div class="file-card"><p class="dim" id="file-urges-line"></p></div>
     </div>
 
     <div class="file-sec">

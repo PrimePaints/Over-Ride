@@ -13,10 +13,11 @@ import * as stepper from './stepper.js';
 import * as dump from './dump.js';
 import * as copilot from './copilot.js';
 import * as file from './file.js';
+import * as urge from './urge.js';
 import { renderCard } from './dump.js';
 
 // ---------- router ----------
-const flows = { defib, retrace, stepper, dump, copilot, file };
+const flows = { defib, retrace, stepper, dump, copilot, file, urge };
 let current = 'home';
 
 function show(name) {

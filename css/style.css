@@ -52,8 +52,8 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .triage-grid {
   flex: 1;
   display: grid;
-  grid-template-rows: repeat(5, 1fr);
-  gap: 12px;
+  grid-template-rows: repeat(6, 1fr);
+  gap: 10px;
   min-height: 0;
 }
 
@@ -82,6 +82,29 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .t-stuck  { background: linear-gradient(135deg, #7a4a03, #a86200); }
 .t-dump   { background: linear-gradient(135deg, #0d5c3e, #148055); }
 .t-copilot { background: linear-gradient(135deg, #45258c, #6c3fd4); }
+.t-urge { background: linear-gradient(135deg, #0b4f5c, #12839b); }
+
+/* ============ STOP URGE ============ */
+.urge-phase { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.urge-phase.centered { justify-content: center; align-items: center; gap: 6px; }
+.urge-phase.centered .pill-btn { width: 100%; }
+.urge-q { font-size: 1.1rem; font-weight: 700; margin: 10px 0 4px; text-align: center; }
+.chip.num { min-width: 52px; text-align: center; font-weight: 800; font-size: 1.1rem; }
+#urge-game { position: relative; }
+
+.breath-circle {
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  margin: 10px 0 22px;
+  background: radial-gradient(circle at 35% 35%, #35b7cf, #0b3d47);
+  transition: transform 1.5s ease-in-out;
+  transform: scale(1);
+}
+.breath-text { font-size: 1.15rem; font-weight: 600; text-align: center; min-height: 1.6em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .breath-circle { transition: none; }
+}
 
 /* ============ SHARED CONTROLS ============ */
 .icon-btn {

@@ -138,8 +138,8 @@ export function calibration() {
   return { hits, misses: resolved.length - hits, resolved: resolved.length, confirmed, denied };
 }
 
-// ---------- JITAI guard: no analysis mid- or fresh-out-of-spiral ----------
+// ---------- JITAI guard: no analysis fresh out of a spiral OR an urge ----------
 export function recentSpiral() {
   const cutoff = Date.now() - SPIRAL_COOLDOWN_MS;
-  return crumbs.recent(8).some(c => c.ts > cutoff && /spiral/i.test(c.text));
+  return crumbs.recent(8).some(c => c.ts > cutoff && /spiral|stop urge|urge wave/i.test(c.text));
 }

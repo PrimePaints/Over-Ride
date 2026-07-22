@@ -3,7 +3,7 @@
 // Mentalist Engine: atomic timestamped observations with importance and
 // provenance, consolidated later (Phase 2) by the sleep cycle.
 
-import { notes as noteStore, crumbs, rhythm, harvestMark, sleepMeter } from './store.js';
+import { notes as noteStore, crumbs, rhythm, harvestMark, sleepMeter, urges } from './store.js';
 
 const MAX_ACTIVE = 1500;
 const KINDS = ['pattern', 'trigger', 'state', 'win', 'value', 'fact'];
@@ -182,6 +182,8 @@ export function relevant(msg, n = 5) {
 // capped at 30 so the watermark keeps us from double-counting.
 const CRUMB_RULES = [
   { re: /hit “I'?m Spiraling”/i, spiral: true },
+  { re: /rode out an urge wave \((\d+|\?)→(\d+|\?)\)/i, note: m => ({ text: `Rode out an urge wave (intensity ${m[1]}→${m[2]})`, kind: 'win', imp: 6, kw: ['urge', 'wave', 'ridden'] }) },
+  { re: /took an urge wave to the co-pilot/i, note: () => ({ text: 'An urge wave was big enough to need talking through', kind: 'state', imp: 5, kw: ['urge', 'wave', 'support'] }) },
   { re: /trying to: “(.+)”/i, note: m => ({ text: `A spiral interrupted: ${m[1]}`, kind: 'trigger', imp: 5, kw: [...tokens(m[1]).slice(0, 4), 'spiral'] }) },
   { re: /FINISHED: “(.+)” — every step done/i, note: m => ({ text: `Finished “${m[1]}” by micro-stepping`, kind: 'win', imp: 5, kw: [...tokens(m[1]).slice(0, 4), 'finished'] }) },
   { re: /started micro-stepping: “(.+)”/i, note: m => ({ text: `Couldn't start “${m[1]}” — used the stepper`, kind: 'trigger', imp: 4, kw: [...tokens(m[1]).slice(0, 4), 'stuck'] }) },
@@ -215,6 +217,23 @@ export function harvestTelemetry() {
 }
 
 // ---------- summaries for the system prompt & The File ----------
+export function urgeSummary() {
+  const u = urges.get();
+  if (!u.log.length) return null;
+  const week = u.log.filter(e => Date.now() - e.ts < 7 * 864e5).length;
+  const counts = {};
+  u.log.forEach((e) => { if (e.trigger) counts[e.trigger] = (counts[e.trigger] || 0) + 1; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  const total = u.hourly.reduce((a, b) => a + b, 0);
+  let peak = '';
+  if (total >= 3) {
+    const h = u.hourly.indexOf(Math.max(...u.hourly));
+    peak = `, peak hour ~${String(h).padStart(2, '0')}:00`;
+  }
+  return `${u.ridden} wave${u.ridden === 1 ? '' : 's'} ridden of ${u.log.length} logged (${week} this week)` +
+    `${top ? `, usual trigger: ${top[0]}` : ''}${peak}`;
+}
+
 export function rhythmSummary() {
   const r = rhythm.get();
   const total = r.hourly.reduce((a, b) => a + b, 0);

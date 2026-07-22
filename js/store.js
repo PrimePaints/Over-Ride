@@ -174,6 +174,10 @@ export const urges = {
     if (entry.rode) state.urges.ridden++;
     save();
   },
+  amendLastTrigger(t) {
+    const last = state.urges.log[state.urges.log.length - 1];
+    if (last) { last.trigger = t; save(); }
+  },
 };
 
 export const crumbs = {
