@@ -316,6 +316,14 @@
     </div>
 
     <div class="file-sec">
+      <p class="settings-h">Agenda <span class="dim">(next 48h, both calendars)</span></p>
+      <div class="file-card">
+        <ul class="agenda-list" id="file-agenda"></ul>
+        <p class="dim hidden" id="file-agenda-hint"></p>
+      </div>
+    </div>
+
+    <div class="file-sec">
       <p class="settings-h">Vault</p>
       <div class="file-card"><p class="dim" id="file-vault-line"></p></div>
     </div>
@@ -518,6 +526,20 @@
     </label>
     <button class="pill-btn alt" id="set-recal">🎛️ Run the personality screening</button>
     <button class="pill-btn alt" id="set-file">📁 Open The File</button>
+
+    <p class="settings-h">Context connectors</p>
+    <label class="setting-row column">
+      <span>Google OAuth Client ID <span class="dim">(console.cloud.google.com → APIs → Credentials)</span></span>
+      <input type="text" id="set-gclient" class="big-input key-input" placeholder="1234…apps.googleusercontent.com" autocomplete="off">
+    </label>
+    <div class="setting-row column">
+      <span>Calendars <span class="dim">(one sign-in per account — events tag as [personal] / [work])</span></span>
+      <div class="conn-row">
+        <button class="pill-btn alt conn-btn" id="set-gcal-personal">Connect personal</button>
+        <button class="pill-btn alt conn-btn" id="set-gcal-work">Connect work</button>
+      </div>
+      <p class="dim conn-status" id="gcal-status"></p>
+    </div>
 
     <button class="pill-btn alt danger" id="set-wipe">Wipe all my data</button>
     <p class="dim about">Over-Ride keeps everything on this device — your vault, your matrix, your key.

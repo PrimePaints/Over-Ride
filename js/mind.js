@@ -7,6 +7,7 @@ import { completeJSON } from './ai.js';
 import { mind as mindStore, crumbs, vault, portrait, dossier, ago } from './store.js';
 import { relevant, rhythmSummary, urgeSummary, OBS_OPEN, OBS_CLOSE } from './notes.js';
 import { openReads, openPredictions, calibration, recentSpiral } from './reads.js';
+import { agendaLines } from './gcal.js';
 
 // ---------- The screening ----------
 // kind: 'single' → tap one chip (auto-advances), 'multi' → toggle chips,
@@ -217,8 +218,12 @@ export function chatSystem(latestMsg = '', { voice = false } = {}) {
   }
 
   const recent = crumbs.recent(4).map(c => `- ${c.text} (${ago(c.ts)})`).join('\n');
-  sys += `\n\nLIVE CONTEXT (right now):\n- Local time: ${new Date().toLocaleString([], { weekday: 'long', hour: '2-digit', minute: '2-digit' })}` +
-    `\n${recent ? '- Recent app activity:\n' + recent : '- No recent app activity.'}`;
+  sys += `\n\nLIVE CONTEXT (right now):\n- Local time: ${new Date().toLocaleString([], { weekday: 'long', hour: '2-digit', minute: '2-digit' })}`;
+  const agenda = agendaLines(8);
+  if (agenda.length) {
+    sys += `\n- Their agenda, next 48h ([work] and [personal] calendars):\n${agenda.map(l => '  · ' + l).join('\n')}`;
+  }
+  sys += `\n${recent ? '- Recent app activity:\n' + recent : '- No recent app activity.'}`;
 
   if (recentSpiral()) {
     sys += `\n- ⚠ They hit a spiral within the last half hour. Stabilization first: ground, shrink, hand them one step. No reads, no pattern analysis, no predictions right now unless they explicitly ask.`;

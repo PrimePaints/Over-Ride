@@ -532,6 +532,16 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .read-file-card { border-left: 4px solid #a685f0; }
 #file-preds { margin-top: 10px; }
 
+/* ============ CALENDAR / CONNECTORS ============ */
+.conn-row { display: flex; gap: 10px; }
+.conn-btn { flex: 1; margin: 0; padding: 12px 10px; font-size: .9rem; }
+.conn-status { font-size: .8rem; line-height: 1.45; }
+.agenda-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.agenda-list li { font-size: .88rem; line-height: 1.45; padding-left: 12px; position: relative; }
+.agenda-list li::before { content: '·'; position: absolute; left: 0; }
+.agenda-list li.ag-work { color: #e0a34e; }
+.agenda-list li.ag-personal { color: #a685f0; }
+
 /* ============ VOICE MODE ============ */
 .voice-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 0; }
 .voice-orb {

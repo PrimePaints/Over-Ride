@@ -16,6 +16,7 @@ const DEFAULTS = {
   reads: [],       // {id, ts, claim, confidence, evidence, test, status, seen, resolvedTs}
   predictions: [], // {id, ts, claim, due, evidence, status, resolvedTs}
   urges: { log: [], hourly: new Array(24).fill(0), ridden: 0 }, // Stop Urge history
+  gcal: { clientId: '', accounts: { personal: null, work: null }, events: [], fetched: 0 },
   vault: [],        // {id, ts, type, title, extra, done}
   crumbs: [],       // {ts, text} — passive context breadcrumbs for the Retracer
   streak: 0,        // lifetime micro-steps completed
@@ -44,6 +45,11 @@ function load() {
         log: Array.isArray(parsed.urges?.log) ? parsed.urges.log : [],
         hourly: Array.isArray(parsed.urges?.hourly) && parsed.urges.hourly.length === 24 ? parsed.urges.hourly : new Array(24).fill(0),
         ridden: Number(parsed.urges?.ridden) || 0,
+      },
+      gcal: {
+        ...structuredClone(DEFAULTS.gcal),
+        ...(parsed.gcal || {}),
+        accounts: { personal: parsed.gcal?.accounts?.personal || null, work: parsed.gcal?.accounts?.work || null },
       },
     };
   } catch {
@@ -162,6 +168,12 @@ export const predictions = {
     if (x) { Object.assign(x, patch); save(); }
   },
   replaceAll(list) { state.predictions = list; save(); },
+};
+
+export const gcal = {
+  get: () => state.gcal,
+  patch(p) { Object.assign(state.gcal, p); save(); },
+  setAccount(slot, acc) { state.gcal.accounts[slot] = acc; save(); },
 };
 
 export const urges = {

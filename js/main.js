@@ -7,6 +7,8 @@ import { unlockAudio } from './audio.js';
 import { buzz } from './haptics.js';
 import { primeTTS } from './speech.js';
 import { MODELS, isConfigured } from './ai.js';
+import { gcal as gcalStore } from './store.js';
+import { connect as gcalConnect, status as gcalStatus } from './gcal.js';
 import * as defib from './defib.js';
 import * as retrace from './retrace.js';
 import * as stepper from './stepper.js';
@@ -146,6 +148,40 @@ function bindSettings() {
   const geminiKey = $('#set-geminikey');
   geminiKey.value = aiStore.get('geminiKey');
   geminiKey.addEventListener('change', () => aiStore.set('geminiKey', geminiKey.value.trim()));
+
+  // calendar connectors (personal + work)
+  const gclient = $('#set-gclient');
+  gclient.value = gcalStore.get().clientId;
+  gclient.addEventListener('change', () => gcalStore.patch({ clientId: gclient.value.trim() }));
+
+  const renderGcalStatus = (msg) => {
+    const st = gcalStatus();
+    const label = (slot) => {
+      const s = st[slot];
+      if (s.state === 'ok') return `${slot}: ${s.email} ✓`;
+      if (s.state === 'expired') return `${slot}: ${s.email} — reconnect`;
+      return `${slot}: not connected`;
+    };
+    $('#gcal-status').textContent = msg || `${label('personal')} · ${label('work')}`;
+    $('#set-gcal-personal').textContent = st.personal.state === 'off' ? 'Connect personal' : 'Reconnect personal';
+    $('#set-gcal-work').textContent = st.work.state === 'off' ? 'Connect work' : 'Reconnect work';
+  };
+  const wireConnect = (slot, btnId) => {
+    $(btnId).addEventListener('click', async () => {
+      renderGcalStatus(`connecting ${slot}…`);
+      try {
+        const email = await gcalConnect(slot);
+        renderGcalStatus();
+        buzz([20, 30, 20]);
+        void email;
+      } catch (err) {
+        renderGcalStatus(`${slot}: ${err.message}`);
+      }
+    });
+  };
+  wireConnect('personal', '#set-gcal-personal');
+  wireConnect('work', '#set-gcal-work');
+  renderGcalStatus();
   $('#set-recal').addEventListener('click', () => {
     sessionStorage.setItem('override-recal', '1');
     router.go('copilot');

@@ -7,6 +7,7 @@ import { notes as noteStore, portrait, rhythm, vault, mind as mindStore, dossier
 import { rhythmSummary, urgeSummary } from './notes.js';
 import { runSleep, sleepStatus } from './sleep.js';
 import { openReads, openPredictions, calibration, receipts, resolveRead, resolvePrediction, expireStale } from './reads.js';
+import { refreshEvents, agendaLines, hasAnyAccount, status as gcalStatus } from './gcal.js';
 import { AIError } from './ai.js';
 
 let router = null;
@@ -305,6 +306,35 @@ function renderUrgesLine() {
   $('#file-urges-line').textContent = urgeSummary() || 'None logged yet — the 🌊 Stop Urge button feeds this.';
 }
 
+function renderAgenda() {
+  const list = $('#file-agenda');
+  const hint = $('#file-agenda-hint');
+  list.innerHTML = '';
+  const lines = agendaLines(10);
+  if (!hasAnyAccount()) {
+    hint.textContent = 'Connect your personal and work calendars in Settings — the co-pilot sees your next 48h.';
+    hint.classList.remove('hidden');
+    return;
+  }
+  const st = gcalStatus();
+  const expired = ['personal', 'work'].filter(s => st[s].state === 'expired');
+  if (expired.length) {
+    hint.textContent = `${expired.join(' + ')} calendar needs a reconnect in Settings.`;
+    hint.classList.remove('hidden');
+  } else if (!lines.length) {
+    hint.textContent = 'Nothing on the calendars for the next 48 hours.';
+    hint.classList.remove('hidden');
+  } else {
+    hint.classList.add('hidden');
+  }
+  lines.forEach((l) => {
+    const li = document.createElement('li');
+    li.className = l.startsWith('[work]') ? 'ag-work' : 'ag-personal';
+    li.textContent = l;
+    list.appendChild(li);
+  });
+}
+
 function renderVaultLine() {
   const items = vault.all();
   const open = items.filter(i => !i.done);
@@ -405,9 +435,11 @@ export function enter() {
   renderMatrixCard();
   renderRhythm();
   renderUrgesLine();
+  renderAgenda();
   renderVaultLine();
   renderFilters();
   renderNotes();
+  refreshEvents().then(renderAgenda).catch(() => {});
 }
 
 export function exit() {

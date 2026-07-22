@@ -11,6 +11,7 @@ import { stripObs, parseObs, record, unrecord, harvestTelemetry } from './notes.
 import { needSleep, runSleep } from './sleep.js';
 import { sleepMeter } from './store.js';
 import { unseenRead, markSeen, resolveRead, receipts, expireStale, recentSpiral } from './reads.js';
+import { refreshEvents } from './gcal.js';
 
 let router = null;
 let phase = 'setup';
@@ -371,6 +372,7 @@ export function init(r) {
 export function enter() {
   hush();
   harvestTelemetry(); // fold fresh breadcrumbs into rhythm + field notes
+  refreshEvents().catch(() => {}); // freshen the agenda for LIVE CONTEXT
   crumbs.log('opened the co-pilot');
   hideNotedChip();
   const recal = sessionStorage.getItem('override-recal');
