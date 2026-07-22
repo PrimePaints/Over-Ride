@@ -2,7 +2,7 @@
 // but users must still receive updates: stale-while-revalidate serves the
 // cached copy instantly and refreshes it in the background for next time.
 
-const CACHE = 'override-v10';
+const CACHE = 'override-v11';
 const ASSETS = [
   '.',
   'index.html',

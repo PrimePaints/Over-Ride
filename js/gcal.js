@@ -52,7 +52,7 @@ export async function connect(slot) {
         callback: async (resp) => {
           if (!resp || resp.error) {
             const why = resp?.error === 'access_denied'
-              ? 'Sign-in was cancelled (or this Google account is not on the OAuth consent screen\'s test-user list).'
+              ? 'Sign-in did not finish. If Google showed "Access blocked": add this account under Audience → Test users in the Cloud console. For a Workspace account, the admin must also trust the app (Admin console → Security → API controls → App access control).'
               : `Google sign-in failed: ${resp?.error_description || resp?.error || 'no response'}`;
             reject(new Error(why));
             return;

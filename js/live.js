@@ -11,8 +11,8 @@ const WS_URL = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativel
 // Google retired the whole 2.5-Live generation (gemini-live-2.5-flash*,
 // gemini-2.0-flash-live-001 shut down 2025-12-09); the current line is 3.1.
 const MODEL_CANDIDATES = [
-  'gemini-3.1-flash-live-preview',              // recommended for all Live use
-  'gemini-2.5-flash-native-audio-preview-12-2025', // deprecated but still serving
+  'gemini-3.1-flash-live-preview',        // recommended for all Live use
+  'gemini-2.5-flash-native-audio-latest', // alias for the newest 2.5 native-audio snapshot
 ];
 
 const IN_RATE = 16000;
