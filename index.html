@@ -134,6 +134,7 @@
     <button class="icon-btn back" data-go="home" aria-label="Back home">←</button>
     <h2 id="cp-title">Co-Pilot</h2>
     <div class="home-header-btns">
+      <button class="icon-btn hidden" id="cp-voice" aria-label="Talk out loud — voice mode">🎙️</button>
       <button class="icon-btn hidden" id="cp-file" aria-label="Open The File">📁</button>
       <button class="icon-btn hidden" id="cp-clear" aria-label="Clear conversation">🧹</button>
       <button class="icon-btn hidden" id="cp-recal" aria-label="Redo the personality screening">🎛️</button>
@@ -219,6 +220,33 @@
       <input type="text" id="chat-input" class="big-input" placeholder="talk to me…" autocomplete="off">
       <button class="mic-btn" id="chat-mic" aria-label="Speak your message">🎤</button>
       <button class="mic-btn send" id="chat-send" aria-label="Send">➤</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VOICE MODE: LIVE CALL WITH THE CO-PILOT ============ -->
+<section id="screen-voice" class="screen dark">
+  <header class="flow-header">
+    <button class="icon-btn back" data-go="copilot" aria-label="Back to chat">←</button>
+    <h2 id="voice-title">Voice</h2>
+    <span class="header-spacer"></span>
+  </header>
+
+  <div id="voice-nokey" class="cp-phase centered hidden">
+    <p class="copilot-line">Voice mode needs a Google AI key.</p>
+    <p class="dim cp-note">The live call runs on Gemini; your co-pilot's memory and dossier stay on Claude. Create a free key at <b>aistudio.google.com/apikey</b>, then add it in Settings. Like everything here, it lives only on this phone.</p>
+    <button class="pill-btn" id="voice-to-settings">Add the key in Settings →</button>
+  </div>
+
+  <div id="voice-stage" class="cp-phase hidden">
+    <div class="voice-center">
+      <div class="voice-orb" id="voice-orb"><div class="vo-core"></div></div>
+      <p class="voice-status" id="voice-status">connecting…</p>
+    </div>
+    <div class="voice-caps" id="voice-caps" aria-live="polite"></div>
+    <div class="voice-controls">
+      <button class="icon-btn voice-mute" id="voice-mute" aria-label="Mute microphone">🎙️</button>
+      <button class="pill-btn voice-endbtn" id="voice-end">End the call</button>
     </div>
   </div>
 </section>
@@ -479,6 +507,10 @@
     <label class="setting-row column">
       <span>Anthropic API key <span class="dim">(never leaves this device)</span></span>
       <input type="password" id="set-apikey" class="big-input key-input" placeholder="sk-ant-…" autocomplete="off">
+    </label>
+    <label class="setting-row column">
+      <span>Google AI key <span class="dim">(voice mode — aistudio.google.com/apikey)</span></span>
+      <input type="password" id="set-geminikey" class="big-input key-input" placeholder="AIza…" autocomplete="off">
     </label>
     <label class="setting-row">
       <span>Model</span>

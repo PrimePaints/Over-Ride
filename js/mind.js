@@ -153,7 +153,7 @@ function vaultSummary() {
   return s;
 }
 
-export function chatSystem(latestMsg = '') {
+export function chatSystem(latestMsg = '', { voice = false } = {}) {
   const m = matrix();
   let sys = SAFETY_CORE;
 
@@ -224,6 +224,12 @@ export function chatSystem(latestMsg = '') {
     sys += `\n- ⚠ They hit a spiral within the last half hour. Stabilization first: ground, shrink, hand them one step. No reads, no pattern analysis, no predictions right now unless they explicitly ask.`;
   }
 
-  sys += `\n\n${OBS_PROTOCOL}`;
+  if (voice) {
+    // spoken conversation: no field-note protocol (it would be read aloud);
+    // the transcript flows into the chat log and gets consolidated later
+    sys += `\n\nVOICE MODE: You are live on a voice call with them right now. Speak like a person — short natural turns, one to three sentences unless they ask you to go deeper. No lists, no markdown, no symbols, no stage directions. You are the same co-pilot; everything above still applies.`;
+  } else {
+    sys += `\n\n${OBS_PROTOCOL}`;
+  }
   return sys;
 }

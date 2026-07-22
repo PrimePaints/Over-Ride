@@ -4,7 +4,7 @@ const KEY = 'override-v1';
 
 const DEFAULTS = {
   settings: { voice: true, haptics: true, noise: 'brown', volume: 60, dumpAuto: false, gameHelpSeen: false },
-  ai: { apiKey: '', model: 'claude-opus-4-8' },
+  ai: { apiKey: '', model: 'claude-opus-4-8', geminiKey: '' },
   mind: null,       // {answers, matrix, ts} — the co-pilot's personality matrix
   chat: [],         // {role, text, ts} — co-pilot conversation, capped at 40
   notes: [],        // field notes {id, ts, la, text, kind, imp, prov, ev, status, kw}

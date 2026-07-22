@@ -5,8 +5,10 @@ import { $ } from './ui.js';
 import { say, hush, listen, stopListening, sttSupported } from './speech.js';
 import { chime, unlockAudio } from './audio.js';
 import { buzz } from './haptics.js';
-import { parseDump, typeMeta } from './brain.js';
+import { parseDump, typeMeta, TYPES } from './brain.js';
 import { crumbs, vault, settings } from './store.js';
+import { isConfigured, completeJSON } from './ai.js';
+import { record } from './notes.js';
 
 let router = null;
 let micCtl = null;
@@ -57,10 +59,10 @@ function toggleMic() {
 // Hands-free loop: utterance captured → file it → flash the result →
 // back to capture with the mic re-armed for the next thought. A silent
 // listen (nothing captured) ends the loop.
-function handsFreeStep() {
+async function handsFreeStep() {
   const raw = $('#dump-text').value.trim();
   if (!raw) return; // silence — loop ends, stay on capture
-  sortIt({ quiet: true });
+  await sortIt({ quiet: true });
   clearTimeout(loopTimer);
   loopTimer = setTimeout(() => {
     if (!onScreen) return;
@@ -110,12 +112,73 @@ export function renderCard(item, { interactive = false } = {}) {
   return card;
 }
 
-function sortIt({ quiet = false } = {}) {
+// AI sorting: the co-pilot splits and classifies the dump. Falls back to the
+// offline regex engine when there's no key, no signal, or any error.
+const SORT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['items', 'insight'],
+  properties: {
+    items: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['title', 'type', 'extra', 'when'],
+        properties: {
+          title: { type: 'string', description: 'short, imperative, in the user\'s own words' },
+          type: { type: 'string', enum: Object.keys(TYPES) },
+          extra: { type: 'string', description: 'one genuinely useful addition (a draft opener for a contact, a concrete first step, a time tag) or empty string' },
+          when: { type: 'string', description: 'time reference if one was stated (e.g. "tomorrow", "Friday 2pm") or empty string' },
+        },
+      },
+    },
+    insight: { type: 'string', description: 'one short observation about the user worth remembering from this dump, or empty string if nothing stands out' },
+  },
+};
+
+const SORT_SYSTEM = `You are the sorting brain of Over-Ride's Brain Dump. The user blurted a raw stream of thought (often speech-transcribed, comma-joined, messy) to get it out of their head. Split it into distinct items and classify each: errand (buy/get/pick up), contact (email/call/message someone), health (symptoms, meds, sleep, mood logs), reminder (time-bound), idea (thoughts to keep), todo (everything else actionable). Keep titles short and in their own words. Never invent items that aren't there; merge fragments that are clearly one thought. The "extra" field is your one chance to actually assist — a draft first line for a contact, the obvious first step for a scary todo — use it when it earns its place, else empty.`;
+
+async function sortWithAI(raw) {
+  const out = await completeJSON({
+    system: SORT_SYSTEM,
+    messages: [{ role: 'user', content: raw }],
+    schema: SORT_SCHEMA,
+    maxTokens: 1500,
+  });
+  const items = (out.items || [])
+    .filter(i => i && typeof i.title === 'string' && i.title.trim())
+    .map(i => ({
+      title: i.title.trim().slice(0, 120),
+      type: TYPES[i.type] ? i.type : 'todo',
+      extra: (i.extra || '').trim().slice(0, 120) || null,
+      when: (i.when || '').trim().slice(0, 40) || null,
+    }));
+  if (!items.length) throw new Error('empty');
+  const insight = (out.insight || '').trim();
+  if (insight) {
+    record({ text: insight.slice(0, 240), kind: 'state', imp: 4, prov: 'inferred', kw: [] });
+  }
+  return items;
+}
+
+async function sortIt({ quiet = false } = {}) {
   if (micCtl) micCtl.stop();
   const raw = $('#dump-text').value.trim();
   if (!raw) { $('#dump-text').focus(); return; }
 
-  const items = parseDump(raw);
+  const btn = $('#dump-sort');
+  let items = null;
+  if (isConfigured() && navigator.onLine !== false) {
+    btn.disabled = true;
+    btn.textContent = 'Sorting…';
+    try {
+      items = await sortWithAI(raw);
+    } catch { /* offline brain takes over */ }
+    btn.disabled = false;
+    btn.textContent = 'Sort it for me →';
+  }
+  if (!items || !items.length) items = parseDump(raw);
   if (!items.length) { $('#dump-text').focus(); return; }
 
   const cardsEl = $('#dump-cards');

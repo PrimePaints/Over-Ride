@@ -26,6 +26,7 @@ function show(id) {
   PHASES.forEach(x => $('#' + x).classList.toggle('hidden', x !== id));
   $('#cp-title').textContent = phase === 'chat' ? (matrix()?.codename || 'Co-Pilot') : TITLES[phase];
   const inChat = phase === 'chat';
+  $('#cp-voice').classList.toggle('hidden', !inChat);
   $('#cp-file').classList.toggle('hidden', !inChat);
   $('#cp-clear').classList.toggle('hidden', !inChat);
   $('#cp-recal').classList.toggle('hidden', !inChat);
@@ -348,6 +349,7 @@ export function init(r) {
   $('#cp-recal').addEventListener('click', () => show('cp-intro'));
   $('#cp-clear').addEventListener('click', clearChat);
   $('#cp-file').addEventListener('click', () => router.go('file'));
+  $('#cp-voice').addEventListener('click', () => router.go('voice'));
   $('#noted-undo').addEventListener('click', () => {
     unrecord(lastNoted);
     hideNotedChip();

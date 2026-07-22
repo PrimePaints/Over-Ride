@@ -13,7 +13,7 @@ const CONTACT_RE = /\b(email|e-mail|mail|text|message|msg|call|phone|ring|reply 
 const ERRAND_RE = /\b(buy|get|pick up|pickup|order|grab|refill|groceries|grocery|shopping)\b/i;
 const IDEA_RE = /\b(idea|what if|maybe (?:i|we)|should try|could try|might be cool|thought:?)\b/i;
 
-const TYPES = {
+export const TYPES = {
   errand:   { icon: '🛒', label: 'Errand' },
   contact:  { icon: '✉️', label: 'Reach out' },
   health:   { icon: '🩺', label: 'Health log' },

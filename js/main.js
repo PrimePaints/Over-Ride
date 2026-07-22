@@ -13,11 +13,12 @@ import * as stepper from './stepper.js';
 import * as dump from './dump.js';
 import * as copilot from './copilot.js';
 import * as file from './file.js';
+import * as voice from './voice.js';
 import * as urge from './urge.js';
 import { renderCard } from './dump.js';
 
 // ---------- router ----------
-const flows = { defib, retrace, stepper, dump, copilot, file, urge };
+const flows = { defib, retrace, stepper, dump, copilot, file, urge, voice };
 let current = 'home';
 
 function show(name) {
@@ -141,6 +142,10 @@ function bindSettings() {
   model.value = aiStore.get('model');
   apiKey.addEventListener('change', () => aiStore.set('apiKey', apiKey.value.trim()));
   model.addEventListener('change', () => aiStore.set('model', model.value));
+
+  const geminiKey = $('#set-geminikey');
+  geminiKey.value = aiStore.get('geminiKey');
+  geminiKey.addEventListener('change', () => aiStore.set('geminiKey', geminiKey.value.trim()));
   $('#set-recal').addEventListener('click', () => {
     sessionStorage.setItem('override-recal', '1');
     router.go('copilot');

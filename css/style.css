@@ -532,6 +532,38 @@ input, textarea, select { user-select: text; -webkit-user-select: text; }
 .read-file-card { border-left: 4px solid #a685f0; }
 #file-preds { margin-top: 10px; }
 
+/* ============ VOICE MODE ============ */
+.voice-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-height: 0; }
+.voice-orb {
+  width: 180px; height: 180px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid rgba(108, 63, 212, .35);
+  transition: border-color .3s ease;
+}
+.vo-core {
+  width: 96px; height: 96px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #a97ff5, #2c1663);
+  animation: vobreathe 3.2s ease-in-out infinite;
+}
+.voice-orb.talking { border-color: rgba(166, 133, 240, .9); }
+.voice-orb.talking .vo-core { animation: votalk .55s ease-in-out infinite; }
+@keyframes vobreathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+@keyframes votalk { 0%,100% { transform: scale(1); } 50% { transform: scale(1.16); } }
+.voice-status { color: var(--dim); font-size: .95rem; text-align: center; min-height: 1.3em; }
+.voice-status.err { color: var(--spiral); padding: 0 16px; line-height: 1.45; }
+.voice-caps {
+  max-height: 32dvh; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 6px 2px 12px;
+}
+.cap { font-size: .92rem; line-height: 1.4; }
+.cap-me { color: var(--dim); }
+.cap-ai { color: var(--text); }
+.voice-controls { display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+.voice-mute { width: 56px; height: 56px; font-size: 1.3rem; }
+.voice-mute.muted { background: var(--spiral); color: #fff; }
+.voice-endbtn { flex: 1; margin: 0; background: var(--card); color: var(--spiral); border: 1px solid var(--spiral); }
+
 /* ============ SETTINGS ============ */
 .settings-h { color: var(--dim); font-size: .75rem; text-transform: uppercase; letter-spacing: .2em; margin: 18px 4px 4px; }
 .setting-row.column { flex-direction: column; align-items: stretch; gap: 10px; }
